@@ -18,6 +18,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Base64;
 import java.util.LinkedList;
+import java.util.List;
 
 public class maingui extends gui {
     private JButton loansButton;
@@ -250,96 +251,121 @@ public class maingui extends gui {
         return "";
     }
 
-    private void fetchAndDisplayFilteredAssets(DefaultTableModel model,String user, String pass) {
+    private void fetchAndDisplayFilteredAssets(DefaultTableModel model, String user, String pass) {
         model.setRowCount(0); // Clear existing table data
 
-        try {
+        // Build query string
+        StringBuilder query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+        LinkedList<String> conditions = new LinkedList<>();
 
-            // Build the dynamic query string
-            StringBuilder query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+        if (!ServiceTagSEARCH.getText().isEmpty())
+            conditions.add("serial_numberLIKE" + ServiceTagSEARCH.getText());
+        if (!ModelSEARCH.getText().isEmpty())
+            conditions.add("model.nameLIKE" + ModelSEARCH.getText());
+        if (!VendorSEARCH.getText().isEmpty())
+            conditions.add("vendor.nameLIKE" + VendorSEARCH.getText());
+        if (!DepartmentSEARCH.getText().isEmpty())
+            conditions.add("department.nameLIKE" + DepartmentSEARCH.getText());
+        if (!OwnerSEARCH.getText().isEmpty())
+            conditions.add("assigned_to.nameLIKE" + OwnerSEARCH.getText());
+        if (!WarrantySEARCH.getText().isEmpty())
+            conditions.add("warranty_expirationLIKE" + WarrantySEARCH.getText());
+        if (!TypeSEARCH.getText().isEmpty())
+            conditions.add("model_category.nameLIKE" + TypeSEARCH.getText());
+        if (!commentsSEARCH.getText().isEmpty())
+            conditions.add("commentsLIKE" + commentsSEARCH.getText());
 
-            LinkedList<String> conditions = new LinkedList<>();
+        query.append(String.join("^", conditions));
+        String finalQuery = query.toString(); // Final query for use inside the worker
 
-            if (!ServiceTagSEARCH.getText().isEmpty())
-                conditions.add("serial_numberLIKE" + ServiceTagSEARCH.getText());
-
-            if (!ModelSEARCH.getText().isEmpty())
-                conditions.add("model.display_valueLIKE" + ModelSEARCH.getText());
-
-            if (!VendorSEARCH.getText().isEmpty())
+        // SwingWorker to handle background loading
+        SwingWorker<Void, Integer> worker = new SwingWorker<>()
+        {
+            @Override
+            protected Void doInBackground() throws Exception
             {
-                conditions.add("vendor.nameLIKE" + VendorSEARCH.getText());
-            }
-            if (!DepartmentSEARCH.getText().isEmpty())
-                conditions.add("department.nameLIKE" + DepartmentSEARCH.getText());
+                publish(5); // Start progress
 
-            if (!OwnerSEARCH.getText().isEmpty())
-                conditions.add("assigned_to.nameLIKE" + OwnerSEARCH.getText());
+                HttpURLConnection conn = (HttpURLConnection) new URL(finalQuery).openConnection();
+                conn.setRequestMethod("GET");
 
-            if (!WarrantySEARCH.getText().isEmpty())
-                conditions.add("warranty_expirationLIKE" + WarrantySEARCH.getText());
+                String basicAuth = Base64.getEncoder().encodeToString((user + ":" + pass).getBytes());
+                conn.setRequestProperty("Authorization", "Basic " + basicAuth);
+                conn.setRequestProperty("Accept", "application/xml");
 
-            if (!TypeSEARCH.getText().isEmpty())
-                conditions.add("model_category.nameLIKE" + TypeSEARCH.getText());
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 200) {
+                    publish(25); // After successful connection
 
-            if (!commentsSEARCH.getText().isEmpty())
-                conditions.add("commentsLIKE" + commentsSEARCH.getText());
+                    InputStream input = conn.getInputStream();
 
+                    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                    Document doc = dBuilder.parse(input);
+                    doc.getDocumentElement().normalize();
 
+                    NodeList resultNodes = doc.getElementsByTagName("result");
+                    int total = resultNodes.getLength();
 
-            // Join all conditions with ^
+                    for (int i = 0; i < total; i++)
+                    {
+                        Node resultNode = resultNodes.item(i);
+                        if (resultNode.getNodeType() == Node.ELEMENT_NODE)
+                        {
+                            Element el = (Element) resultNode;
 
-            query.append(String.join("^", conditions));
-            System.out.println(query.toString());
-            HttpURLConnection conn = (HttpURLConnection) new URL(query.toString()).openConnection();
-            conn.setRequestMethod("GET");
+                            String ServiceTag = getTagValue("serial_number", el);
+                            String assetTag = getTagValue("asset_tag", el);
+                            String Comments = getTagValue("comments", el);
+                            String Warranty = getTagValue("warranty_expiration", el);
+                            String Vendor = getNestedTagValue("vendor", "display_value", el);
+                            String Model = getNestedTagValue("model", "display_value", el);
+                            String Department = getNestedTagValue("department", "display_value", el);
+                            String ItemType = getNestedTagValue("model_category", "display_value", el);
+                            String Owner = getNestedTagValue("assigned_to", "display_value", el);
 
-            String basicAuth = Base64.getEncoder().encodeToString((user + ":" + pass).getBytes());
-            conn.setRequestProperty("Authorization", "Basic " + basicAuth);
-            conn.setRequestProperty("Accept", "application/xml");
+                            final Object[] row = new Object[]{assetTag, ServiceTag, Comments, Vendor, Model, Department, ItemType, Warranty, Owner};
 
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode == 200) {
-                InputStream input = conn.getInputStream();
-
-                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                Document doc = dBuilder.parse(input);
-                doc.getDocumentElement().normalize();
-
-                NodeList resultNodes = doc.getElementsByTagName("result");
-                for (int i = 0; i < resultNodes.getLength(); i++) {
-                    Node resultNode = resultNodes.item(i);
-                    if (resultNode.getNodeType() == Node.ELEMENT_NODE) {
-                        Element el = (Element) resultNode;
-
-                        String ServiceTag = getTagValue("serial_number", el);
-
-                        String assetTag = getTagValue("asset_tag", el);
-                        String Comments =  getTagValue("comments", el);
-                        String Warranty = getTagValue("warranty_expiration", el);
-                        String Vendor = getNestedTagValue("vendor", "display_value", el);
-                        String Model = getNestedTagValue("model", "display_value", el);
-                        String Department = getNestedTagValue("department", "display_value", el);
-                        String ItemType = getNestedTagValue("model_category", "display_value", el);
-                        String Owner = getNestedTagValue("assigned_to", "display_value", el);
+                            SwingUtilities.invokeLater(() -> model.addRow(row));
+                        }
 
 
-                        model.addRow(new Object[]{assetTag, ServiceTag,Comments,Vendor,Model,Department,ItemType,Warranty,Owner});
+                        int progress = 15 + (int)(((double)i / total) * 30);
+                        publish(progress);
                     }
+                    publish(0);
                 }
 
-            } else {
+                else
+                {
+                    System.out.println("HTTP error code: " + responseCode);
+                }
 
-                System.out.println("Error code: " + responseCode);
+                return null;
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            @Override
+            protected void process(List<Integer> chunks) {
+                int latestProgress = chunks.get(chunks.size() - 1);
+                progressBar.setValue(latestProgress);
+            }
 
+            @Override
+            protected void done() {
+               progressBar.setValue(100);
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ignored) {}
+                    SwingUtilities.invokeLater(() -> progressBar.setValue(0));
+                }).start();
+
+            }
+        };
+
+        worker.execute();
     }
+
 
 
 }// end of class maingui.java
