@@ -51,7 +51,7 @@ public class Main
 
             Class<?> theme = Class.forName(gui.getThemes()[storedtheme].getClassName());
             UIManager.setLookAndFeel((LookAndFeel) theme.getDeclaredConstructor().newInstance());
-            frame=new JFrame("PSU Stash Database");
+
         }
         catch(Exception e)
         {

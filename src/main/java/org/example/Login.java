@@ -10,10 +10,14 @@ public class Login extends gui {
     private JTextField usernameFeild;
     private JButton loginButton;
     private JLabel pleaseWaitLabel;
+    private JComboBox envriomentOption;
 
     public Login(JFrame frame) {
         super(frame);
         pleaseWaitLabel.setText(" ");
+        envriomentOption.addItem("Production");
+        envriomentOption.addItem("Development");
+        envriomentOption.addItem("Accept");
 
         loginButton.addActionListener(new ActionListener() {
             @Override
