@@ -89,7 +89,7 @@ public class maingui extends gui {
             String user = username;
             String pass = password;
 
-            String queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_query=asset_tagLIKEF1&sysparm_limit=100&sysparm_display_value=true";
+            String queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
 
             HttpURLConnection conn = (HttpURLConnection) new URL(queryUrl).openConnection();
             conn.setRequestMethod("GET");

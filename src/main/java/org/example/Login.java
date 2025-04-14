@@ -13,29 +13,48 @@ public class Login extends gui {
 
     public Login(JFrame frame) {
         super(frame);
-        pleaseWaitLabel.setVisible(false);
+        pleaseWaitLabel.setText(" ");
 
         loginButton.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                pleaseWaitLabel.setVisible(true);
-                String pass = new String(passwordField1.getPassword()); // Get password correctly
-                String name = textField1.getText(); // Get username or name
+            public void actionPerformed(ActionEvent e)
+            {
+                pleaseWaitLabel.setText("Authenticating...");
 
+                // Run the login operation in a background thread
+                SwingWorker<Void, Void> worker = new SwingWorker<>()
+                {
+                    @Override
+                    protected Void doInBackground() throws Exception
+                    {
+                        String pass = new String(passwordField1.getPassword());
+                        String name = textField1.getText();
 
-                JFrame mainframe = new JFrame("PSU Stash Database");
-                maingui gui = new maingui(mainframe,name,pass);
-                gui = new maingui(mainframe,name,pass);
+                        JFrame mainframe = new JFrame("PSU Stash Database");
+                        maingui gui = new maingui(mainframe, name, pass);
 
+                        SwingUtilities.invokeLater(() ->
+                        {
+                            mainframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+                            mainframe.setContentPane(gui.getPanel());
+                            mainframe.pack();
+                            mainframe.setLocationRelativeTo(frame);
+                            mainframe.setResizable(true);
+                            mainframe.setVisible(true);
+                            frame.dispose();
+                        });
 
-                mainframe.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-                mainframe.setContentPane(gui.getPanel());
-                mainframe.pack();
-                mainframe.setLocationRelativeTo(frame);
-                mainframe.setResizable(true);
-                mainframe.setVisible(true);
-                frame.dispose();
+                        return null;
+                    }
 
+                    @Override
+                    protected void done()
+                    {
+                        pleaseWaitLabel.setText(""); // Clear message when done (optional)
+                    }
+                };
+
+                worker.execute();
             }
         });
     }
