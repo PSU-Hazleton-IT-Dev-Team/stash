@@ -330,7 +330,7 @@ public class maingui extends gui {
                         }
 
 
-                        int progress = 15 + (int)(((double)i / total) * 30);
+                        int progress = 15 + (int)(((double)i / total) * 90);
                         publish(progress);
                     }
                     publish(0);

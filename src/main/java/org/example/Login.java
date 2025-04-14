@@ -5,9 +5,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class Login extends gui {
-    private JPasswordField passwordField1;
-    private JPanel panel1;
-    private JTextField textField1;
+    private JPasswordField passwordField;
+    private JPanel loginPanel;
+    private JTextField usernameFeild;
     private JButton loginButton;
     private JLabel pleaseWaitLabel;
 
@@ -27,8 +27,8 @@ public class Login extends gui {
                     @Override
                     protected Void doInBackground() throws Exception
                     {
-                        String pass = new String(passwordField1.getPassword());
-                        String name = textField1.getText();
+                        String pass = new String(passwordField.getPassword());
+                        String name = usernameFeild.getText();
 
                         JFrame mainframe = new JFrame("PSU Stash Database");
                         maingui gui = new maingui(mainframe, name, pass);
@@ -60,14 +60,14 @@ public class Login extends gui {
     }
 
     public JPasswordField getPasswordField1() {
-        return passwordField1;
+        return passwordField;
     }
 
     public JTextField getTextField1() {
-        return textField1;
+        return usernameFeild;
     }
 
     public JPanel getPanel() {
-        return panel1;
+        return loginPanel;
     }
 }
