@@ -66,7 +66,7 @@ public class maingui extends gui {
     private JButton settingsButton;
     private JTabbedPane RightTabs;
     private JProgressBar progressBar;
-    private JButton reauthenticateBROKENButton;
+    private JButton reauthenticateButton;
     private JTextArea sqlInjection;
     private JPanel FilterPannel;
     private JButton injectSQLButton;
@@ -208,12 +208,13 @@ public class maingui extends gui {
 
             }
         });
-        reauthenticateBROKENButton.addActionListener(new ActionListener() {
+        reauthenticateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFrame loginframe= new JFrame();
                 Login gui = new Login(loginframe);
                 gui.setup_frame(1, gui.getPanel(),frame);
+                frame.dispose();
             }
         });
     } // end of maingui

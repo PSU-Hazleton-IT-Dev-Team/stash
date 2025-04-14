@@ -50,7 +50,7 @@ public class Login extends gui {
                     @Override
                     protected void done()
                     {
-                        pleaseWaitLabel.setText(""); // Clear message when done (optional)
+                        pleaseWaitLabel.setText("Welcome!"); // Clear message when done (optional)
                     }
                 };
 
