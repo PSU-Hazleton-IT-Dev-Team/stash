@@ -132,14 +132,13 @@ public class maingui extends gui {
                 }
             } else {
                 System.out.println(responseCode);
-               // JOptionPane.showMessageDialog(this,
-                        //"HTTP Error " + responseCode + ": " + conn.getResponseMessage());
+                JOptionPane.showMessageDialog(frame, "HTTP Error " + responseCode + ": " + conn.getResponseMessage());
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            //JOptionPane.showMessageDialog(this,
-                    //"Failed to fetch or parse XML:\n" + e.getMessage());
+            JOptionPane.showMessageDialog(frame,
+                    "Failed to fetch or parse XML:\n" + e.getMessage());
         }
 
 
@@ -336,10 +335,12 @@ public class maingui extends gui {
                     publish(0);
                 }
 
-                else
-                {
-                    System.out.println("HTTP error code: " + responseCode);
-                }
+            else {
+            System.out.println(responseCode);
+            JOptionPane.showMessageDialog(frame, "HTTP Error " + responseCode + ": " + conn.getResponseMessage());
+        }
+
+
 
                 return null;
             }
