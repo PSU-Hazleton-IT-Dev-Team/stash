@@ -97,7 +97,7 @@ public class maingui extends gui {
             else if(database.equals("Development"))
             {
                 //TODO change API URL
-                queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
+                queryUrl = "https://psudev.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
 
             }
             else if (database.equals("Accept"))
@@ -106,6 +106,7 @@ public class maingui extends gui {
                 queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
             }
 
+            System.out.println(queryUrl);
             HttpURLConnection conn = (HttpURLConnection) new URL(queryUrl).openConnection();
             conn.setRequestMethod("GET");
 
@@ -278,7 +279,7 @@ public class maingui extends gui {
         else if(database.equals("Development"))
         {
             //TODO change API URL
-            query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+            query = new StringBuilder("https://psudev.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
         }
         else if (database.equals("Accept"))
         {
