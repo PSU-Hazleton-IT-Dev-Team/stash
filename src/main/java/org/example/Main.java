@@ -1,6 +1,7 @@
 package org.example;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
@@ -18,7 +19,6 @@ public class Main
 
         JFrame frame = new JFrame("Login");
         Login logingui = new Login(frame);
-
 
 
 
@@ -59,6 +59,9 @@ public class Main
         }
 
         //Logic I/OS
+        frame = new JFrame("Login");
+        Image icon = Toolkit.getDefaultToolkit().getImage(Main.class.getResource("/iconlogo.png"));
+        frame.setIconImage(icon);
 
 
         logingui= new Login(frame);

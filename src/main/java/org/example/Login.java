@@ -34,8 +34,9 @@ public class Login extends gui {
                         String pass = new String(passwordField.getPassword());
                         String name = usernameFeild.getText();
 
-                        JFrame mainframe = new JFrame("PSU Stash Database");
-                        maingui gui = new maingui(mainframe, name, pass);
+                        JFrame mainframe = new JFrame("Stash");
+                        String database=envriomentOption.getSelectedItem().toString();
+                        maingui gui = new maingui(mainframe, name, pass,database);
 
                         SwingUtilities.invokeLater(() ->
                         {

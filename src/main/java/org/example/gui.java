@@ -13,12 +13,16 @@ public class gui {
     protected JFrame frame;
     protected static FlatAllIJThemes.FlatIJLookAndFeelInfo[] themes;
 
-    //Getting the db connected
+    //setting the icon up
+
     public gui(JFrame frame)
     {
         this.frame = frame;
         this.themes = FlatAllIJThemes.INFOS;
         System.out.println(themes[1].getClassName());
+        Image icon = Toolkit.getDefaultToolkit().getImage(Main.class.getResource("/iconlogo.png"));
+        frame.setIconImage(icon);
+
     }
 
     public static void clear(Container[] c, String[] input)
@@ -44,6 +48,9 @@ public class gui {
 
     public void setup_frame(int close_op, JPanel panel, JFrame referenceFrame)
     {
+        Image icon = Toolkit.getDefaultToolkit().getImage(Main.class.getResource("/iconlogo.png"));
+        frame.setIconImage(icon);
+
         this.frame.setDefaultCloseOperation(close_op);
         this.frame.setContentPane(panel);
         this.frame.pack();

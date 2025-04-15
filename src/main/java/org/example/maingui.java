@@ -78,7 +78,7 @@ public class maingui extends gui {
 
     /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public maingui(JFrame frame, String username, String password) {
+    public maingui(JFrame frame, String username, String password,String database) {
         super(frame);
 
         String[] columns = {"Name", "Asset Tag","Comments","Vendor","Model","Department","Item Type","Warranty Expires","Owner"};
@@ -89,8 +89,22 @@ public class maingui extends gui {
         try {
             String user = username;
             String pass = password;
+            String queryUrl = "";
+            if(database.equals("Production"))
+            {
+                queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
+            }
+            else if(database.equals("Development"))
+            {
+                //TODO change API URL
+                queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
 
-            String queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
+            }
+            else if (database.equals("Accept"))
+            {
+                //TODO change API URL
+                queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
+            }
 
             HttpURLConnection conn = (HttpURLConnection) new URL(queryUrl).openConnection();
             conn.setRequestMethod("GET");
@@ -166,7 +180,7 @@ public class maingui extends gui {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(),username,password);
+                fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(),username,password,database);
 
             }
 
@@ -192,7 +206,7 @@ public class maingui extends gui {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFrame settingsframe= new JFrame();
-                settingsgui gui = new settingsgui(settingsframe, frame,username,password);
+                settingsgui gui = new settingsgui(settingsframe, frame,username,password,database);
                 gui.setup_frame(1, gui.getPanel(),frame);
             }
         });
@@ -203,7 +217,7 @@ public class maingui extends gui {
             public void keyTyped(KeyEvent e) {
                 super.keyTyped(e);
                 if (e.getKeyCode() == KeyEvent.VK_ENTER ) {
-                    fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(),username,password);
+                    fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(),username,password,database);
                 }
 
             }
@@ -250,11 +264,27 @@ public class maingui extends gui {
         return "";
     }
 
-    private void fetchAndDisplayFilteredAssets(DefaultTableModel model, String user, String pass) {
+    private void fetchAndDisplayFilteredAssets(DefaultTableModel model, String user, String pass,String database) {
         model.setRowCount(0); // Clear existing table data
 
         // Build query string
         StringBuilder query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+
+        if(database.equals("Production"))
+        {
+            query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+
+        }
+        else if(database.equals("Development"))
+        {
+            //TODO change API URL
+            query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+        }
+        else if (database.equals("Accept"))
+        {
+            //TODO change API URL
+            query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+        }
         LinkedList<String> conditions = new LinkedList<>();
 
         if (!ServiceTagSEARCH.getText().isEmpty())
