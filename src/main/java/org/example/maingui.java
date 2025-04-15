@@ -209,17 +209,20 @@ public class maingui extends gui {
             }
         });
 
+        JTextField[] searchFields = {
+                ServiceTagSEARCH, VendorSEARCH, ModelSEARCH,
+                TypeSEARCH, DepartmentSEARCH, OwnerSEARCH,
+                WarrantySEARCH, commentsSEARCH
+        };
 
-        mainPanel.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-                super.keyTyped(e);
-                if (e.getKeyCode() == KeyEvent.VK_ENTER ) {
-                    fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(),username,password,database);
-                }
+        for (JTextField field : searchFields) {
+            field.addActionListener(e ->
+                    fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, database)
+            );
+        }
 
-            }
-        });
+
+
         reauthenticateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
