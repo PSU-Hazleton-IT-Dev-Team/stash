@@ -24,7 +24,7 @@ public class settingsgui extends gui {
     private JComboBox symbolsBox;
 
 
-    public settingsgui(JFrame frame, JFrame parentframe,String username, String password, String database) {
+    public settingsgui(JFrame frame, JFrame parentframe,String username, String password, String database,String unit) {
         super(frame);
         //Setting up Theme ComboBox
         for (FlatAllIJThemes.FlatIJLookAndFeelInfo theme : this.getThemes()) {
@@ -72,7 +72,7 @@ public class settingsgui extends gui {
                     JFrame update= new JFrame("PSU Stash Database");
 
                     //Reloading UI
-                    maingui gui = new maingui(update,username,password,database);
+                    maingui gui = new maingui(update,username,password,database,unit);
                     gui.setup_frame(3, gui.getPanel(), parentframe);
                 }
                 catch(Exception a)

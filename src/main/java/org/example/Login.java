@@ -28,6 +28,10 @@ public class Login extends gui {
         unitBox.addItem("H5");
         unitBox.addItem("W2");
         unitBox.addItem("W3");
+        unitBox.addItem("I3");
+        unitBox.addItem("F1");
+
+
 
         // Shared login action
         ActionListener loginAction = new ActionListener()
@@ -45,9 +49,10 @@ public class Login extends gui {
                         String pass = new String(passwordField.getPassword());
                         String name = usernameFeild.getText();
                         String database = envriomentOption.getSelectedItem().toString();
+                        String unit = unitBox.getSelectedItem().toString();
 
                         JFrame mainframe = new JFrame("Stash");
-                        maingui gui = new maingui(mainframe, name, pass, database);
+                        maingui gui = new maingui(mainframe, name, pass, database,unit);
 
                         SwingUtilities.invokeLater(() ->
                         {

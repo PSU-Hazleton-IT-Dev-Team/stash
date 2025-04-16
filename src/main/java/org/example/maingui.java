@@ -78,7 +78,7 @@ public class maingui extends gui {
 
     /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public maingui(JFrame frame, String username, String password,String database) {
+    public maingui(JFrame frame, String username, String password,String database,String unit) {
         super(frame);
 
         String[] columns = {"Name", "Asset Tag","Comments","Vendor","Model","Department","Item Type","Warranty Expires","Owner"};
@@ -102,6 +102,11 @@ public class maingui extends gui {
             {
                 queryUrl = "https://psuaccept.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
             }
+            if(unit!="All Units")
+            {
+                queryUrl+=("&sysparm_query=asset_tagSTARTSWITH"  + unit);
+            }
+
 
             System.out.println(queryUrl);
             HttpURLConnection conn = (HttpURLConnection) new URL(queryUrl).openConnection();
@@ -178,7 +183,7 @@ public class maingui extends gui {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(),username,password,database);
+                fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(),username,password,database,unit);
 
             }
 
@@ -204,7 +209,7 @@ public class maingui extends gui {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFrame settingsframe= new JFrame();
-                settingsgui gui = new settingsgui(settingsframe, frame,username,password,database);
+                settingsgui gui = new settingsgui(settingsframe, frame,username,password,database,unit);
                 gui.setup_frame(1, gui.getPanel(),frame);
             }
         });
@@ -217,7 +222,7 @@ public class maingui extends gui {
 
         for (JTextField field : searchFields) {
             field.addActionListener(e ->
-                    fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, database)
+                    fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, database,unit)
             );
         }
 
@@ -265,7 +270,7 @@ public class maingui extends gui {
         return "";
     }
 
-    private void fetchAndDisplayFilteredAssets(DefaultTableModel model, String user, String pass,String database) {
+    private void fetchAndDisplayFilteredAssets(DefaultTableModel model, String user, String pass,String database,String unit) {
         model.setRowCount(0); // Clear existing table data
 
         // Build query string
@@ -284,6 +289,8 @@ public class maingui extends gui {
         {
             query = new StringBuilder("https://psuaccept.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
         }
+
+
         LinkedList<String> conditions = new LinkedList<>();
 
         if (!ServiceTagSEARCH.getText().isEmpty())
@@ -303,9 +310,15 @@ public class maingui extends gui {
         if (!commentsSEARCH.getText().isEmpty())
             conditions.add("commentsLIKE" + commentsSEARCH.getText());
 
+
+        if(unit!="All Units")
+        {
+            conditions.add("asset_tagSTARTSWITH" + unit);
+        }
+
         query.append(String.join("^", conditions));
         String finalQuery = query.toString(); // Final query for use inside the worker
-
+        System.out.println(finalQuery);
         // SwingWorker to handle background loading
         SwingWorker<Void, Integer> worker = new SwingWorker<>()
         {
