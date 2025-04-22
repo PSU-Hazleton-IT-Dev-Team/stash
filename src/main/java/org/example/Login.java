@@ -12,6 +12,9 @@ public class Login extends gui {
     private JLabel pleaseWaitLabel;
     private JComboBox envriomentOption;
     private JComboBox unitBox;
+    private JRadioButton useAPIKeyRadioButton;
+    private JLabel unamelabel;
+    private JLabel pwordlabel;
 
     public Login(JFrame frame)
     {
@@ -51,6 +54,12 @@ public class Login extends gui {
                         String database = envriomentOption.getSelectedItem().toString();
                         String unit = unitBox.getSelectedItem().toString();
 
+                        if (useAPIKeyRadioButton.isSelected())
+                        {
+                            name="KEYNAME";
+                            pass="KEYPASSWORD";
+                        }
+
                         JFrame mainframe = new JFrame("Stash");
                         maingui gui = new maingui(mainframe, name, pass, database,unit);
 
@@ -84,6 +93,27 @@ public class Login extends gui {
         // Trigger login on Enter key press in username or password fields
         usernameFeild.addActionListener(loginAction);
         passwordField.addActionListener(loginAction);
+        useAPIKeyRadioButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                if (useAPIKeyRadioButton.isSelected())
+                {
+                    usernameFeild.setVisible(false);
+                    passwordField.setVisible(false);
+                    unamelabel.setVisible(false);
+                    pwordlabel.setVisible(false);
+                }
+                else
+                {
+                    usernameFeild.setVisible(true);
+                    passwordField.setVisible(true);
+                    unamelabel.setVisible(true);
+                    pwordlabel.setVisible(true);
+                }
+
+            }
+        });
     }
 
     public JPasswordField getPasswordField1()
