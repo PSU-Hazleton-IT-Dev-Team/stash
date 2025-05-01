@@ -56,8 +56,7 @@ public class Login extends gui {
 
                         if (useAPIKeyRadioButton.isSelected())
                         {
-                            name="KEYNAME";
-                            pass="KEYPASSWORD";
+
                         }
 
                         JFrame mainframe = new JFrame("Stash");

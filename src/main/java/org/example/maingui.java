@@ -6,13 +6,13 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.*;
+import java.awt.event.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -82,7 +82,14 @@ public class maingui extends gui {
         super(frame);
 
         String[] columns = {"Name", "Asset Tag","Comments","Vendor","Model","Department","Item Type","Warranty Expires","Owner"};
-        DefaultTableModel tableModel = new DefaultTableModel(columns, 0);
+        DefaultTableModel tableModel = new DefaultTableModel(columns, 0)
+        {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                //all cells false
+                return false;
+            }
+        };
         entryTable.setModel(tableModel);
 
 
@@ -226,6 +233,28 @@ public class maingui extends gui {
             );
         }
 
+
+
+        entryTable.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent mouseEvent) {
+                JTable table =(JTable) mouseEvent.getSource();
+                Point point = mouseEvent.getPoint();
+                int row = table.rowAtPoint(point);
+                if (mouseEvent.getClickCount() == 2 && table.getSelectedRow() != -1 && row != -1) {
+
+                    System.out.println(entryTable.getValueAt(entryTable.getSelectedRow(), 0).toString());
+
+                    if(entryTable.getValueAt(entryTable.getSelectedRow(), 0).toString()!=null)
+                    {
+                        JFrame detailsframe = new JFrame();
+                        Details gui = new Details(detailsframe,username,password,database,unit,entryTable.getValueAt(entryTable.getSelectedRow(), 0).toString());
+                        gui.setup_frame(1, gui.getPanel(),frame);
+
+                    }
+
+                }
+            }
+        });
 
 
         reauthenticateButton.addActionListener(new ActionListener() {
