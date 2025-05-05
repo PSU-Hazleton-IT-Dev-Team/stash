@@ -21,7 +21,7 @@ public class Details extends gui {
     private JTextField department;
     private JTextField type;
     private JTextField warranty;
-    private JTextArea comments;
+    private JTextPane comments;
     private JButton saveCommentsAndExitButton;
     private JButton exitButton;
     private JTextField createdon;
@@ -33,7 +33,10 @@ public class Details extends gui {
     private JTextField depricationamnt;
     private JButton iButton;
     private JPanel detailsPanel;
-    private JLabel currentowner;
+    private JTextField updatedon;
+    private JTextField owner;
+    private JTextField owneroffice;
+    private JTextField ownercampus;
 
     public Details(JFrame frame, String user, String pass,String database,String unit,String Name)
     {
@@ -92,6 +95,13 @@ public class Details extends gui {
                         String Department = getNestedTagValue("department", "display_value", el);
                         String ItemType = getNestedTagValue("model_category", "display_value", el);
                         String Owner = getNestedTagValue("assigned_to", "display_value", el);
+                        String CreatedBy = getTagValue("sys_created_by",el);
+                        String CreatedOn = getTagValue("sys_created_on",el);
+                        String UpdatedBy = getTagValue("sys_updated_by",el);
+                        String UpdatedOn =getTagValue("sys_updated_on",el);
+                        String Cost=getTagValue("cost", el);
+                        String StockRoom=getNestedTagValue("stock_room", "display_value", el);
+                        String DepricationAmnt=getTagValue("depreciated_amount",el);
 
                         name.setText(assetTag);
                         tag.setText(ServiceTag);
@@ -101,6 +111,16 @@ public class Details extends gui {
                         type.setText(ItemType);
                         warranty.setText(Warranty);
                         comments.setText(Comments);
+                        createdby.setText(CreatedBy);
+                        updatedby.setText(UpdatedBy);
+                        updatedon.setText(UpdatedOn);
+                        cost.setText(Cost);
+                        stock.setText(StockRoom);
+                        depricationamnt.setText(DepricationAmnt);
+                        createdon.setText(CreatedOn);
+                        owner.setText(Owner);
+                        owneroffice.setText(Owner);
+                        ownercampus.setText(Owner);
 
                     }
                 }
@@ -136,6 +156,7 @@ public class Details extends gui {
         }
         return "";
     }
+
 
     public JPanel getPanel() {
         return detailsPanel;
