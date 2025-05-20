@@ -8,6 +8,8 @@ import org.w3c.dom.NodeList;
 import javax.swing.*;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -22,7 +24,6 @@ public class Details extends gui {
     private JTextField type;
     private JTextField warranty;
     private JTextPane comments;
-    private JButton saveCommentsAndExitButton;
     private JButton exitButton;
     private JTextField createdon;
     private JTextField stock;
@@ -103,6 +104,11 @@ public class Details extends gui {
                         String StockRoom=getNestedTagValue("stock_room", "display_value", el);
                         String DepricationAmnt=getTagValue("depreciated_amount",el);
 
+                        String linkedPerson = getNestedTagValue("assigned_to", "link", el);
+                        String Campus = fetchLinkedField(linkedPerson, user,pass,"city");
+                        String Office = fetchLinkedField(linkedPerson, user,pass,"u_office_address");
+
+
                         name.setText(assetTag);
                         tag.setText(ServiceTag);
                         vendor.setText(Vendor);
@@ -119,8 +125,31 @@ public class Details extends gui {
                         depricationamnt.setText(DepricationAmnt);
                         createdon.setText(CreatedOn);
                         owner.setText(Owner);
-                        owneroffice.setText(Owner);
-                        ownercampus.setText(Owner);
+                        owneroffice.setText(Office);
+                        ownercampus.setText(Campus);
+                        //disposalreason.setText(Cost);
+
+                        name.setEditable(false);
+                        tag.setEditable(false);
+                        vendor.setEditable(false);
+                        model.setEditable(false);
+                        department.setEditable(false);
+                        type.setEditable(false);
+                        warranty.setEditable(false);
+                        comments.setEditable(false);
+                        createdby.setEditable(false);
+                        updatedby.setEditable(false);
+                        updatedon.setEditable(false);
+                        cost.setEditable(false);
+                        stock.setEditable(false);
+                        depricationamnt.setEditable(false);
+                        createdon.setEditable(false);
+                        owner.setEditable(false);
+                        owneroffice.setEditable(false);
+                        ownercampus.setEditable(false);
+                        disposalreason.setEditable(false);
+
+                        owneroffice.setCaretPosition(0);
 
                     }
                 }
@@ -136,6 +165,12 @@ public class Details extends gui {
             JOptionPane.showMessageDialog(frame,
                     "Failed to fetch or parse XML:\n" + e.getMessage());
         }
+        exitButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+            }
+        });
     }
 
     private static String getNestedTagValue(String parentTag, String childTag, Element element) {
@@ -156,6 +191,44 @@ public class Details extends gui {
         }
         return "";
     }
+
+    private static String fetchLinkedField(String url, String user, String pass, String tagName) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setRequestMethod("GET");
+
+            // Basic Auth
+            String basicAuth = Base64.getEncoder().encodeToString((user + ":" + pass).getBytes());
+            conn.setRequestProperty("Authorization", "Basic " + basicAuth);
+            conn.setRequestProperty("Accept", "application/xml");
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode == 200) {
+                InputStream input = conn.getInputStream();
+
+                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                Document doc = dBuilder.parse(input);
+                doc.getDocumentElement().normalize();
+
+                // Fetch <result><tagName>Value</tagName></result>
+                NodeList resultNodes = doc.getElementsByTagName("result");
+                if (resultNodes.getLength() > 0) {
+                    Element resultEl = (Element) resultNodes.item(0);
+                    NodeList targetNodes = resultEl.getElementsByTagName(tagName);
+                    if (targetNodes.getLength() > 0 && targetNodes.item(0).getTextContent() != null) {
+                        return targetNodes.item(0).getTextContent().trim();
+                    }
+                }
+            } else {
+                System.err.println("Linked field fetch failed: HTTP " + responseCode + " - " + conn.getResponseMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
 
 
     public JPanel getPanel() {
