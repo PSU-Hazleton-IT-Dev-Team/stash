@@ -38,10 +38,14 @@ public class Details extends gui {
     private JTextField owner;
     private JTextField owneroffice;
     private JTextField ownercampus;
+    private JButton saveCommentsButton;
+    private JButton saveCommentsAndExitButton;
 
     public Details(JFrame frame, String user, String pass,String database,String unit,String Name)
     {
+
         super(frame);
+        String assetID=null;
         try {
 
             String queryUrl = "";
@@ -86,6 +90,9 @@ public class Details extends gui {
                     if (resultNode.getNodeType() == Node.ELEMENT_NODE) {
                         Element el = (Element) resultNode;
 
+                      assetID=getTagValue("sys_id",el);
+
+
                         String ServiceTag = getTagValue("serial_number", el);
 
                         String assetTag = getTagValue("asset_tag", el);
@@ -105,7 +112,7 @@ public class Details extends gui {
                         String DepricationAmnt=getTagValue("depreciated_amount",el);
 
                         String linkedPerson = getNestedTagValue("assigned_to", "link", el);
-                        String Campus = fetchLinkedField(linkedPerson, user,pass,"city");
+                        String Campus = fetchLinkedField(linkedPerson,user,pass,"u_employee_campus_code");
                         String Office = fetchLinkedField(linkedPerson, user,pass,"u_office_address");
 
 
@@ -136,7 +143,7 @@ public class Details extends gui {
                         department.setEditable(false);
                         type.setEditable(false);
                         warranty.setEditable(false);
-                        comments.setEditable(false);
+                        comments.setEditable(true);
                         createdby.setEditable(false);
                         updatedby.setEditable(false);
                         updatedon.setEditable(false);
@@ -165,10 +172,37 @@ public class Details extends gui {
             JOptionPane.showMessageDialog(frame,
                     "Failed to fetch or parse XML:\n" + e.getMessage());
         }
+
+        String finalAssetID = assetID;
+
         exitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 frame.dispose();
+            }
+        });
+        saveCommentsAndExitButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (finalAssetID != null) {
+                    String newComment = comments.getText();
+                    updateCommentsField(finalAssetID, newComment, user, pass, database);
+                    frame.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Asset sys_id not available.");
+                }
+            }
+        });
+
+        saveCommentsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (finalAssetID != null) {
+                    String newComment = comments.getText();
+                    updateCommentsField(finalAssetID, newComment, user, pass, database);
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Asset sys_id not available.");
+                }
             }
         });
     }
@@ -227,6 +261,40 @@ public class Details extends gui {
             e.printStackTrace();
         }
         return "";
+    }
+
+    private void updateCommentsField(String sysId, String newComment, String user, String pass, String database) {
+        try {
+            String instanceUrl = switch (database) {
+                case "Production" -> "https://pennstate.service-now.com";
+                case "Development" -> "https://psudev.service-now.com";
+                case "Accept" -> "https://psuaccept.service-now.com";
+                default -> throw new IllegalArgumentException("Unknown instance");
+            };
+
+            URL url = new URL(instanceUrl + "/api/now/table/alm_asset/" + sysId);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("PUT");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+
+            String basicAuth = Base64.getEncoder().encodeToString((user + ":" + pass).getBytes());
+            conn.setRequestProperty("Authorization", "Basic " + basicAuth);
+
+            conn.setDoOutput(true);
+            String json = "{\"comments\": \"" + newComment.replace("\"", "\\\"") + "\"}";
+            conn.getOutputStream().write(json.getBytes());
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode == 200) {
+                JOptionPane.showMessageDialog(null, "Comments updated successfully.");
+            } else {
+                JOptionPane.showMessageDialog(null, "Failed to update comments. HTTP " + responseCode + ": " + conn.getResponseMessage());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Error updating comments: " + e.getMessage());
+        }
     }
 
 
