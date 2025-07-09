@@ -40,6 +40,7 @@ public class Details extends gui {
     private JTextField ownercampus;
     private JButton saveCommentsButton;
     private JButton saveCommentsAndExitButton;
+    private JButton openInServiceNowButton;
 
     public Details(JFrame frame, String user, String pass,String database,String unit,String Name)
     {
@@ -202,6 +203,28 @@ public class Details extends gui {
                     updateCommentsField(finalAssetID, newComment, user, pass, database);
                 } else {
                     JOptionPane.showMessageDialog(frame, "Asset sys_id not available.");
+                }
+            }
+        });
+        openInServiceNowButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (finalAssetID != null && !finalAssetID.isEmpty()) {
+                    String baseUrl = switch (database) {
+                        case "Production" -> "https://pennstate.service-now.com";
+                        case "Development" -> "https://psudev.service-now.com";
+                        case "Accept" -> "https://psuaccept.service-now.com";
+                        default -> throw new IllegalArgumentException("Unknown environment");
+                    };
+                    String snowUrl = baseUrl + "/nav_to.do?uri=alm_asset.do?sys_id=" + finalAssetID;
+                    try {
+                        java.awt.Desktop.getDesktop().browse(new java.net.URI(snowUrl));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(frame, "Failed to open browser: " + ex.getMessage());
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(frame, "No asset sys_id available.");
                 }
             }
         });
