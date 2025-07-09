@@ -91,7 +91,7 @@ public class maingui extends gui {
             }
         };
         entryTable.setModel(tableModel);
-
+        entryTable.setAutoCreateRowSorter(true);
 
         try {
             String user = username;
@@ -181,6 +181,7 @@ public class maingui extends gui {
                 DepartmentSEARCH.setText("");
                 OwnerSEARCH.setText("");
                 WarrantySEARCH.setText("");
+                commentsSEARCH.setText("");
             }
         });
 
