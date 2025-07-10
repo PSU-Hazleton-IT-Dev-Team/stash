@@ -1,16 +1,11 @@
 package org.example;
 
-import com.formdev.flatlaf.FlatDarculaLaf;
-import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.intellijthemes.*;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
-
-import io.github.cdimascio.dotenv.Dotenv;
 
 public class settingsgui extends gui {
     private JButton saveandexitButton;
@@ -20,6 +15,7 @@ public class settingsgui extends gui {
     private JTextField tempipbox;
     private JRadioButton useTemporaryConnectionRadioButton;
     private JButton exitButton;
+    private JTextField ListLimitFeild;
     private JTextField usernamebox;
     private JComboBox symbolsBox;
 
@@ -30,6 +26,43 @@ public class settingsgui extends gui {
         for (FlatAllIJThemes.FlatIJLookAndFeelInfo theme : this.getThemes()) {
             System.out.println("Theme ID: " + theme.getName());
             ThemeBox.addItem(theme.getName());
+
+
+                // Specify the file path
+            String filePath = "settings.txt";
+            int savedIndex = 0;
+
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(filePath)))
+            {
+                String line = reader.readLine();
+                if (line != null)
+                {
+                    savedIndex = Integer.parseInt(line.trim());
+                }
+            }
+            catch (FileNotFoundException e)
+            {
+                System.err.println("Settings file not found: " + e.getMessage());
+            }
+            catch (NumberFormatException e)
+            {
+                System.err.println("Invalid number format in settings file: " + e.getMessage());
+            }
+            catch (IOException e)
+            {
+                System.err.println("Error reading from the file: " + e.getMessage());
+            }
+
+
+            if (savedIndex >= 0 && savedIndex < ThemeBox.getItemCount())
+            {
+                ThemeBox.setSelectedIndex(savedIndex);
+            } else
+            {
+                ThemeBox.setSelectedIndex(0); // Set to default if invalid
+            }
+
         }
 
         saveandexitButton.addActionListener(new ActionListener() {
