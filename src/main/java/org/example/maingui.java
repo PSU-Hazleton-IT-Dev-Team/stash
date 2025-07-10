@@ -78,7 +78,7 @@ public class maingui extends gui {
 
     /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public maingui(JFrame frame, String username, String password,String database,String unit) {
+    public maingui(JFrame frame, String username, String password,String database,String unit,int limit) {
         super(frame);
 
         String[] columns = {"Name", "Asset Tag","Comments","Vendor","Model","Department","Item Type","Warranty Expires","Owner"};
@@ -99,15 +99,15 @@ public class maingui extends gui {
             String queryUrl = "";
             if(database.equals("Production"))
             {
-                queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
+                queryUrl = "https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_limit="+limit+"&sysparm_display_value=true";
             }
             else if(database.equals("Development"))
             {
-                queryUrl = "https://psudev.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
+                queryUrl = "https://psudev.service-now.com/api/now/table/alm_asset?sysparm_limit="+limit+"&sysparm_display_value=true";
             }
             else if (database.equals("Accept"))
             {
-                queryUrl = "https://psuaccept.service-now.com/api/now/table/alm_asset?sysparm_limit=100&sysparm_display_value=true";
+                queryUrl = "https://psuaccept.service-now.com/api/now/table/alm_asset?sysparm_limit="+limit+"&sysparm_display_value=true";
             }
             if(unit!="All Units")
             {
@@ -191,7 +191,7 @@ public class maingui extends gui {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(),username,password,database,unit);
+                fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(),username,password,database,unit,limit);
 
             }
 
@@ -230,7 +230,7 @@ public class maingui extends gui {
 
         for (JTextField field : searchFields) {
             field.addActionListener(e ->
-                    fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, database,unit)
+                    fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, database,unit,limit)
             );
         }
 
@@ -262,7 +262,7 @@ public class maingui extends gui {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFrame loginframe= new JFrame();
-                Login gui = new Login(loginframe);
+                Login gui = new Login(loginframe,limit);
                 gui.setup_frame(1, gui.getPanel(),frame);
                 frame.dispose();
             }
@@ -300,24 +300,24 @@ public class maingui extends gui {
         return "";
     }
 
-    private void fetchAndDisplayFilteredAssets(DefaultTableModel model, String user, String pass,String database,String unit) {
+    private void fetchAndDisplayFilteredAssets(DefaultTableModel model, String user, String pass,String database,String unit,int limit) {
         model.setRowCount(0); // Clear existing table data
 
         // Build query string
-        StringBuilder query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+        StringBuilder query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit="+limit+"&sysparm_query=");
 
         if(database.equals("Production"))
         {
-            query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+            query = new StringBuilder("https://pennstate.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit="+limit+"&sysparm_query=");
 
         }
         else if(database.equals("Development"))
         {
-            query = new StringBuilder("https://psudev.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+            query = new StringBuilder("https://psudev.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit="+limit+"&sysparm_query=");
         }
         else if (database.equals("Accept"))
         {
-            query = new StringBuilder("https://psuaccept.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit=100&sysparm_query=");
+            query = new StringBuilder("https://psuaccept.service-now.com/api/now/table/alm_asset?sysparm_display_value=true&sysparm_limit="+limit+"&sysparm_query=");
         }
 
 

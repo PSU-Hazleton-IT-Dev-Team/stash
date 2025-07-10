@@ -16,7 +16,7 @@ public class Login extends gui {
     private JLabel unamelabel;
     private JLabel pwordlabel;
 
-    public Login(JFrame frame)
+    public Login(JFrame frame, int limit)
     {
         super(frame);
         pleaseWaitLabel.setText(" ");
@@ -61,7 +61,7 @@ public class Login extends gui {
                         }
 
                         JFrame mainframe = new JFrame("Stash");
-                        maingui gui = new maingui(mainframe, name, pass, database,unit);
+                        maingui gui = new maingui(mainframe, name, pass, database,unit,limit);
 
                         SwingUtilities.invokeLater(() ->
                         {
