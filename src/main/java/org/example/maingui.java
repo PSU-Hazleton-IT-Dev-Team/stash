@@ -6,8 +6,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -68,6 +66,9 @@ public class maingui extends gui {
     private JTabbedPane RightTabs;
     private JProgressBar progressBar;
     private JButton reauthenticateButton;
+    private JTextArea chatArea;
+    private JTextField userPromptArea;
+    private JButton goButton;
     private JTextArea sqlInjection;
     private JPanel FilterPannel;
     private JButton injectSQLButton;
@@ -90,6 +91,8 @@ public class maingui extends gui {
                 return false;
             }
         };
+        //Set Chatarea For AI to not editable
+        chatArea.setEditable(false);
         entryTable.setModel(tableModel);
         entryTable.setAutoCreateRowSorter(true);
 
@@ -267,7 +270,43 @@ public class maingui extends gui {
                 frame.dispose();
             }
         });
+
+
+        //AI Integration
+
+        goButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMessage();
+            }
+        });
+
+
+
     } // end of maingui
+
+    private void sendMessage() {
+        String userText = userPromptArea.getText().trim();
+        if (userText.isEmpty()) return;
+
+        chatArea.append("You: " + userText + "\n");
+
+
+        // AI API call
+        new Thread(() -> {
+            String aiResponse = callAI(userText);
+            SwingUtilities.invokeLater(() -> {
+                chatArea.append("AI: " + aiResponse + "\n");
+            });
+        }).start();
+
+        userPromptArea.setText("");
+    }
+
+    private String callAI(String prompt) {
+       //TODO MAKE THIS ACTUALLY DO SOMETHING
+        return "This is a mock response to: \"" + prompt + "\"";
+    }
 
     private static String getTagValue(String tag, Element element) {
         NodeList nodeList = element.getElementsByTagName(tag);
