@@ -15,9 +15,10 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Base64;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
@@ -304,14 +305,15 @@ public class maingui extends gui {
         String userText = userPromptArea.getText().trim();
         if (userText.isEmpty()) return;
 
-        chatArea.append("You: " + userText + "\n");
+        chatArea.append("\nYou: " + userText + "\n");
 
 
         // AI API call
         new Thread(() -> {
             String aiResponse = callAI(userText);
+            handleActions(aiResponse);
             SwingUtilities.invokeLater(() -> {
-                chatArea.append("AI: " + aiResponse + "\n");
+                chatArea.append("\nAI: " + aiResponse + "\n");
             });
         }).start();
 
@@ -328,14 +330,52 @@ public class maingui extends gui {
 
     private String callAI(String prompt) {
         try {
+
+            String context= "You are an Inventory AI Agent that helps users search and filter inventory data. You communicate using special <ACTION> tags and operate through a Java Swing GUI that connects to a ServiceNow backend. DO NOT SEND AN ACTION UNLESS YOU WANT TO USE IT THE USER CANNOT SEE THEM\n" +
+                    "\n" +
+                    "Each <ACTION> represents a command. If the action is a filter, it updates a corresponding JTextField. When the <ACTION>data_return</ACTION> command is used, the agent presses a JButton in the UI by calling .doClick().\n" +
+                    " Supported filter fields and their matching JTextField replace the word value with desired filter Also Do not include spaces split any separate words across different fields :\n" +
+                    "\n" +
+                    "    filter_Asset_Tag::value → sets the ServiceTagSEARCH field this is good for strings of chars and numbers that are random \n" +
+                    "\n" +
+                    "    filter_vendor::value → sets the VendorSEARCH field this is for comapines like dell apple HP etc.\n" +
+                    "\n" +
+                    "    filter_Model::value → sets the ModelSEARCH field this is for Models like Ipad Optiplex Pro etc.\n" +
+                    "\n" +
+                    "    filter_Item_Type::value → sets the TypeSEARCH field This is for Computers Laptops etc.\n" +
+                    "\n" +
+                    "    filter_Department::value → sets the DepartmentSEARCH field \n" +
+                    "\n" +
+                    "    filter_Owner::value → sets the OwnerSEARCH field\n" +
+                    "\n" +
+                    "    filter_Warranty_Expiration::value → sets the WarrantySEARCH field (must match MM/DD/YYYY exactly)\n" +
+                    "\n" +
+                    "    filter_comments::value → sets the commentsSEARCH field (host name)\n" +
+                    "\n" +
+                    " Supported actions:\n" +
+                    "\n" +
+                    "    <ACTION>data_return</ACTION> — triggers the filter by calling .doClick() on the filter button\n" +
+                    "\n" +
+                    "    <ACTION>settings</ACTION> — (optional) opens a settings panel\n" +
+                    "\n" +
+                    "    <ACTION>reauthenticate</ACTION> — (optional) logs the user out or prompts for login\n" +
+                    "\n" +
+                    " Filtering Rules:\n" +
+                    "\n" +
+                    "    Only exact string matches are supported.\n" +
+                    "\n" +
+                    "    Warranty_Expiration only works with exact dates in MM/DD/YYYY format — no ranges or relative terms like “soon” or “before.”\n" +
+                    "\n" +
+                    "    If multiple filters are used, apply all of them to their fields and then trigger data_return to execute the search.";
+
+
             ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
-                    .model("google/gemma-3-4b-it")
+                    .model("openai/gpt-4.1-nano-2025-04-14")
                     .temperature(0.7)
                     .topP(0.7)
                     .frequencyPenalty(1.0)
                     .maxTokens(512)
-
-                    .addUserMessage(prompt)  // adds the user message cleanly
+                    .addUserMessage(context+prompt)  // adds the user message cleanly
                     .build();
             //.topK(50)
 
@@ -355,6 +395,69 @@ public class maingui extends gui {
             return "[Error contacting AI: " + e.getMessage() + "]";
         }
     }
+
+
+
+
+public void handleActions(String input) {
+    Matcher matcher = Pattern.compile("<ACTION>(.*?)</ACTION>").matcher(input);
+
+    while (matcher.find()) {
+        String content = matcher.group(1).trim();
+
+        if (content.startsWith("filter_") && content.contains("::")) {
+            String[] parts = content.split("::", 2);
+            String field = parts[0].substring(7); // remove "filter_"
+            String value = parts[1];
+
+            if (field.equals("Asset_Tag")) {
+                ServiceTagSEARCH.setText(value);
+                filterResultsButton.doClick();
+
+            } else if (field.equals("vendor")) {
+                VendorSEARCH.setText(value);
+                filterResultsButton.doClick();
+
+            } else if (field.equals("Model")) {
+                ModelSEARCH.setText(value);
+                filterResultsButton.doClick();
+
+            } else if (field.equals("Item_Type")) {
+                TypeSEARCH.setText(value);
+                filterResultsButton.doClick();
+
+            } else if (field.equals("Department")) {
+                DepartmentSEARCH.setText(value);
+                filterResultsButton.doClick();
+
+            } else if (field.equals("Owner")) {
+                OwnerSEARCH.setText(value);
+                filterResultsButton.doClick();
+
+            } else if (field.equals("Warranty_Expiration")) {
+                WarrantySEARCH.setText(value);
+                filterResultsButton.doClick();
+
+            } else if (field.equals("comments")) {
+                commentsSEARCH.setText(value);
+                filterResultsButton.doClick();
+
+            } else {
+                System.out.println("Unknown field: " + field);
+            }
+
+        } else if (content.equals("settings")) {
+            settingsButton.doClick();
+        } else if (content.equals("reauthenticate")) {
+            reauthenticateButton.doClick();
+        } else if (content.equals("data_return")) {
+            filterResultsButton.doClick();
+        } else {
+            System.out.println("Unknown command: " + content);
+        }
+    }
+}
+
 
 
     private static String getTagValue(String tag, Element element) {

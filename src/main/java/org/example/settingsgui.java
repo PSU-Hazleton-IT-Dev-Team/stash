@@ -14,7 +14,7 @@ public class settingsgui extends gui {
     private JLabel Theme;
     private JButton exitButton;
     private JTextField ListLimitFeild;
-
+    private JComboBox agentSelection;
 
 
     public settingsgui(JFrame frame, JFrame parentframe,String username, String password, String database,String unit) {
