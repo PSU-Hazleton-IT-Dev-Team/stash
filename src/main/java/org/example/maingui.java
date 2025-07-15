@@ -1,5 +1,6 @@
 package org.example;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -17,6 +18,15 @@ import java.net.URL;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
+
+import com.openai.client.OpenAIClient;
+import com.openai.client.okhttp.OpenAIOkHttpClient;
+
+import com.openai.models.ChatModel;
+import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+
+
 
 public class maingui extends gui {
     private JButton loansButton;
@@ -76,6 +86,8 @@ public class maingui extends gui {
     private JButton printToSQLOUTTxtButton;
     private JButton checkoutModeButton;
 
+    static final Dotenv dotenv =Dotenv.load();
+
 
     /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -95,6 +107,7 @@ public class maingui extends gui {
         chatArea.setEditable(false);
         entryTable.setModel(tableModel);
         entryTable.setAutoCreateRowSorter(true);
+
 
         try {
             String user = username;
@@ -285,6 +298,8 @@ public class maingui extends gui {
 
     } // end of maingui
 
+
+
     private void sendMessage() {
         String userText = userPromptArea.getText().trim();
         if (userText.isEmpty()) return;
@@ -303,10 +318,44 @@ public class maingui extends gui {
         userPromptArea.setText("");
     }
 
+
+
+
+    private static final OpenAIClient client = OpenAIOkHttpClient.builder()
+            .apiKey(dotenv.get("AIAPI_KEY"))
+            .baseUrl("https://api.aimlapi.com/v1")
+            .build();
+
     private String callAI(String prompt) {
-       //TODO MAKE THIS ACTUALLY DO SOMETHING
-        return "This is a mock response to: \"" + prompt + "\"";
+        try {
+            ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
+                    .model("google/gemma-3-4b-it")
+                    .temperature(0.7)
+                    .topP(0.7)
+                    .frequencyPenalty(1.0)
+                    .maxTokens(512)
+
+                    .addUserMessage(prompt)  // adds the user message cleanly
+                    .build();
+            //.topK(50)
+
+            ChatCompletion completion = client
+                    .chat()
+                    .completions()
+                    .create(params);
+
+            return completion.choices()
+                    .getFirst()
+                    .message()
+                    .content()
+                    .orElse("[No content]");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "[Error contacting AI: " + e.getMessage() + "]";
+        }
     }
+
 
     private static String getTagValue(String tag, Element element) {
         NodeList nodeList = element.getElementsByTagName(tag);
