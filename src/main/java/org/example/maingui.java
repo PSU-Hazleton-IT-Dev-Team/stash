@@ -20,10 +20,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 
-import com.openai.models.ChatModel;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 
@@ -80,6 +82,40 @@ public class maingui extends gui {
     private JTextArea chatArea;
     private JTextField userPromptArea;
     private JButton goButton;
+    private JTextField ServiceTagFeildADV;
+    private JRadioButton includeST;
+    private JRadioButton excludeST;
+    private JTextField VendorFieldADV;
+    private JRadioButton excludeV;
+    private JRadioButton includeV;
+    private JRadioButton includeM;
+    private JTextField ModelFeildADV;
+    private JRadioButton excludeM;
+    private JRadioButton includeIT;
+    private JTextField ItemTypeFeildADV;
+    private JRadioButton excludeIT;
+    private JRadioButton includeD;
+    private JTextField DepartmentFeildADV;
+    private JRadioButton excludeD;
+    private JRadioButton includeO;
+    private JRadioButton excludeO;
+    private JTextField OwnerFeildADV;
+    private JRadioButton beforeW;
+    private JTextField WarrantyFeildADV;
+    private JRadioButton afterW;
+    private JRadioButton includeW;
+    private JRadioButton excludeW;
+    private JButton thisYearButton;
+    private JButton nextYearButton;
+    private JButton alreadyExpiredButton;
+    private JTextField CommentsFeildADV;
+    private JRadioButton includeC;
+    private JRadioButton excludeC;
+    private JButton emptyCommentButton;
+    private JButton filterButton;
+    private JButton cButton;
+    private JButton exportCurrentTableAsButton;
+    private JButton runAsReportButton;
     private JTextArea sqlInjection;
     private JPanel FilterPannel;
     private JButton injectSQLButton;
@@ -217,17 +253,7 @@ public class maingui extends gui {
 
 
 
-        //Brings up Import Menu
-        importButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
 
-                JFrame importframe= new JFrame();
-                importgui gui = new importgui(importframe);
-                gui.setup_frame(1, gui.getPanel(),frame);
-                importframe.setResizable(false);
-            }
-        });
 
         //Brings up Settings menu
         settingsButton.addActionListener(new ActionListener() {
@@ -296,10 +322,116 @@ public class maingui extends gui {
         });
 
 
+        filterButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String runner=buildServiceNowQueryURL(false,database);
+                DisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, runner,unit);
+            }
+        });
 
+
+        runAsReportButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String runner=buildServiceNowQueryURL(true,database);
+                DisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, runner,unit);
+
+            }
+        });
     } // end of maingui
 
 
+    public String buildServiceNowQueryURL(boolean runAsReport,String database) {
+        StringBuilder query = new StringBuilder();
+        boolean ignoreWarrantyField = false;
+
+        addMultiValueFilter(query, "Asset_Tag", ServiceTagFeildADV.getText(), includeC.isSelected(), excludeC.isSelected());
+        addMultiValueFilter(query, "vendor", VendorFieldADV.getText(), includeV.isSelected(), excludeV.isSelected());
+        addMultiValueFilter(query, "Model", ModelFeildADV.getText(), includeM.isSelected(), excludeM.isSelected());
+        addMultiValueFilter(query, "Item_Type", ItemTypeFeildADV.getText(), includeIT.isSelected(), excludeIT.isSelected());
+        addMultiValueFilter(query, "Department", DepartmentFeildADV.getText(), includeD.isSelected(), excludeD.isSelected());
+        addMultiValueFilter(query, "Owner", OwnerFeildADV.getText(), includeO.isSelected(), excludeO.isSelected());
+        addMultiValueFilter(query, "comments", CommentsFeildADV.getText(), includeC.isSelected(), excludeC.isSelected());
+
+        if (emptyCommentButton.isSelected()) {
+            query.append("^javascript:comments==null || comments==''");
+        }
+
+        if (alreadyExpiredButton.getModel().isArmed()) {
+            query.append("^javascript:gs.dateDiff(gs.nowDateTime(),Warranty_Expiration)<0");
+            WarrantyFeildADV.setText("Already Expired");
+            ignoreWarrantyField = true;
+        } else if (thisYearButton.getModel().isArmed()) {
+            query.append("^javascript:gs.datePart(Warranty_Expiration,'yyyy')==gs.datePart(gs.nowDateTime(),'yyyy')");
+            WarrantyFeildADV.setText("Expires This Year");
+            ignoreWarrantyField = true;
+        } else if (nextYearButton.getModel().isArmed()) {
+            query.append("^javascript:gs.datePart(Warranty_Expiration,'yyyy')==(gs.datePart(gs.nowDateTime(),'yyyy')+1)");
+            WarrantyFeildADV.setText("Expires Next Year");
+            ignoreWarrantyField = true;
+        }
+
+        String warrantyDate = WarrantyFeildADV.getText().trim();
+        if (!warrantyDate.isEmpty() && !ignoreWarrantyField) {
+            if (beforeW.isSelected()) {
+                query.append("^Warranty_Expiration%3C").append(warrantyDate);
+            } else if (afterW.isSelected()) {
+                query.append("^Warranty_Expiration%3E").append(warrantyDate);
+            }
+        }
+
+        String finalQuery = query.toString();
+        if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
+
+        int limit = runAsReport ? 100000 : 100;
+        String baseURL;
+
+        if (database.equals("Production")) {
+            baseURL = "https://pennstate.service-now.com";
+        } else if (database.equals("Development")) {
+            baseURL = "https://psudev.service-now.com";
+        } else if (database.equals("Accept")) {
+            baseURL = "https://psuaccept.service-now.com";
+        } else {
+            baseURL = "https://pennstate.service-now.com";
+        }
+
+        return baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
+                + "&sysparm_limit=" + limit
+                + "&sysparm_query=" + finalQuery;
+    }
+
+
+    private void addMultiValueFilter(StringBuilder query, String field, String input, boolean include, boolean exclude) {
+        if (input == null || input.trim().isEmpty()) return;
+
+        String[] values = input.trim().split("\\s+");
+        if (values.length == 0) return;
+
+        if (include) {
+            // Single value
+            if (values.length == 1) {
+                query.append("^").append(field).append("LIKE").append(values[0]);
+            }
+            // Multiple values with OR logic
+            else {
+                query.append("^("); // start group
+                for (int i = 0; i < values.length; i++) {
+                    query.append(field).append("LIKE").append(values[i]);
+                    if (i < values.length - 1) {
+                        query.append("^OR");
+                    }
+                }
+                query.append(")"); // end group
+            }
+        } else if (exclude) {
+            // Exact exclusion for each value using !=
+            for (String val : values) {
+                query.append("^").append(field).append("!=").append(val);
+            }
+        }
+    }
 
     private void sendMessage() {
         String userText = userPromptArea.getText().trim();
@@ -331,42 +463,34 @@ public class maingui extends gui {
     private String callAI(String prompt) {
         try {
 
-            String context= "You are an Inventory AI Agent that helps users search and filter inventory data. You communicate using special <ACTION> tags and operate through a Java Swing GUI that connects to a ServiceNow backend. DO NOT SEND AN ACTION UNLESS YOU WANT TO USE IT THE USER CANNOT SEE THEM\n" +
-                    "\n" +
-                    "Each <ACTION> represents a command. If the action is a filter, it updates a corresponding JTextField. When the <ACTION>data_return</ACTION> command is used, the agent presses a JButton in the UI by calling .doClick().\n" +
-                    " Supported filter fields and their matching JTextField replace the word value with desired filter Also Do not include spaces split any separate words across different fields :\n" +
-                    "\n" +
-                    "    filter_Asset_Tag::value → sets the ServiceTagSEARCH field this is good for strings of chars and numbers that are random \n" +
-                    "\n" +
-                    "    filter_vendor::value → sets the VendorSEARCH field this is for comapines like dell apple HP etc.\n" +
-                    "\n" +
-                    "    filter_Model::value → sets the ModelSEARCH field this is for Models like Ipad Optiplex Pro etc.\n" +
-                    "\n" +
-                    "    filter_Item_Type::value → sets the TypeSEARCH field This is for Computers Laptops etc.\n" +
-                    "\n" +
-                    "    filter_Department::value → sets the DepartmentSEARCH field \n" +
-                    "\n" +
-                    "    filter_Owner::value → sets the OwnerSEARCH field\n" +
-                    "\n" +
-                    "    filter_Warranty_Expiration::value → sets the WarrantySEARCH field (must match MM/DD/YYYY exactly)\n" +
-                    "\n" +
-                    "    filter_comments::value → sets the commentsSEARCH field (host name)\n" +
-                    "\n" +
-                    " Supported actions:\n" +
-                    "\n" +
-                    "    <ACTION>data_return</ACTION> — triggers the filter by calling .doClick() on the filter button\n" +
-                    "\n" +
-                    "    <ACTION>settings</ACTION> — (optional) opens a settings panel\n" +
-                    "\n" +
-                    "    <ACTION>reauthenticate</ACTION> — (optional) logs the user out or prompts for login\n" +
-                    "\n" +
-                    " Filtering Rules:\n" +
-                    "\n" +
-                    "    Only exact string matches are supported.\n" +
-                    "\n" +
-                    "    Warranty_Expiration only works with exact dates in MM/DD/YYYY format — no ranges or relative terms like “soon” or “before.”\n" +
-                    "\n" +
-                    "    If multiple filters are used, apply all of them to their fields and then trigger data_return to execute the search.";
+            String context =
+                    "You are an Inventory AI Agent that helps users search and filter inventory data. " +
+                            "You communicate using special <ACTION> tags and operate through a Java Swing GUI that connects to a ServiceNow backend. " +
+                            "The <ACTION> tags are not visible to the user. Only include them if they are needed to trigger behavior.\n\n" +
+
+                            "Each <ACTION> represents a command. If the action is a filter, it updates a corresponding JTextField. " +
+                            "When the <ACTION>data_return</ACTION> command is used, the agent presses a JButton in the UI by calling .doClick().\n\n" +
+
+                            "Supported filter fields and their matching JTextFields (replace 'value' with the actual input):\n" +
+                            "  filter_Asset_Tag::value → ServiceTagSEARCH\n" +
+                            "  filter_vendor::value → VendorSEARCH\n" +
+                            "  filter_Model::value → ModelSEARCH\n" +
+                            "  filter_Item_Type::value → TypeSEARCH\n" +
+                            "  filter_Department::value → DepartmentSEARCH\n" +
+                            "  filter_Owner::value → OwnerSEARCH\n" +
+                            "  filter_Warranty_Expiration::value → WarrantySEARCH (must match MM/DD/YYYY exactly)\n" +
+                            "  filter_comments::value → commentsSEARCH (host name)\n\n" +
+
+                            "Supported actions:\n" +
+                            "  <ACTION>data_return</ACTION> — triggers filterResultsButton.doClick()\n" +
+                            "  <ACTION>settings</ACTION> — triggers settingsButton.doClick()\n" +
+                            "  <ACTION>reauthenticate</ACTION> — triggers reauthenticateButton.doClick()\n\n" +
+
+                            "Rules:\n" +
+                            "- Only exact string matches are supported\n" +
+                            "- Warranty_Expiration must be an exact MM/DD/YYYY date (no 'soon' or 'before')\n" +
+                            "- If multiple filters are used, apply them first, then use <ACTION>data_return</ACTION> to run the filter\n\n";
+
 
 
             ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
@@ -399,64 +523,61 @@ public class maingui extends gui {
 
 
 
-public void handleActions(String input) {
-    Matcher matcher = Pattern.compile("<ACTION>(.*?)</ACTION>").matcher(input);
+    public void handleActions(String input) {
+        Matcher matcher = Pattern.compile("<ACTION>(.*?)</ACTION>").matcher(input);
+        boolean shouldClick = false;
 
-    while (matcher.find()) {
-        String content = matcher.group(1).trim();
+        while (matcher.find()) {
+            String content = matcher.group(1).trim();
 
-        if (content.startsWith("filter_") && content.contains("::")) {
-            String[] parts = content.split("::", 2);
-            String field = parts[0].substring(7); // remove "filter_"
-            String value = parts[1];
+            if (content.startsWith("filter_") && content.contains("::")) {
+                String[] parts = content.split("::", 2);
+                String field = parts[0].substring(7).trim(); // remove "filter_"
+                String value = parts[1].trim();
 
-            if (field.equals("Asset_Tag")) {
-                ServiceTagSEARCH.setText(value);
-                filterResultsButton.doClick();
+                System.out.printf("Setting filter field: %s = %s%n", field, value);
 
-            } else if (field.equals("vendor")) {
-                VendorSEARCH.setText(value);
-                filterResultsButton.doClick();
+                if (field.equals("Asset_Tag")) {
+                    ServiceTagSEARCH.setText(value);
+                } else if (field.equals("vendor")) {
+                    VendorSEARCH.setText(value);
+                } else if (field.equals("Model")) {
+                    ModelSEARCH.setText(value);
+                } else if (field.equals("Item_Type")) {
+                    TypeSEARCH.setText(value);
+                } else if (field.equals("Department")) {
+                    DepartmentSEARCH.setText(value);
+                } else if (field.equals("Owner")) {
+                    OwnerSEARCH.setText(value);
+                } else if (field.equals("Warranty_Expiration")) {
+                    WarrantySEARCH.setText(value);
+                } else if (field.equals("comments")) {
+                    commentsSEARCH.setText(value);
+                } else {
+                    System.out.println("Unknown filter field: " + field);
+                }
 
-            } else if (field.equals("Model")) {
-                ModelSEARCH.setText(value);
-                filterResultsButton.doClick();
+            } else if (content.equals("settings")) {
+                System.out.println("Opening settings...");
+                settingsButton.doClick();
 
-            } else if (field.equals("Item_Type")) {
-                TypeSEARCH.setText(value);
-                filterResultsButton.doClick();
+            } else if (content.equals("reauthenticate")) {
+                System.out.println("Reauthenticating user...");
+                reauthenticateButton.doClick();
 
-            } else if (field.equals("Department")) {
-                DepartmentSEARCH.setText(value);
-                filterResultsButton.doClick();
-
-            } else if (field.equals("Owner")) {
-                OwnerSEARCH.setText(value);
-                filterResultsButton.doClick();
-
-            } else if (field.equals("Warranty_Expiration")) {
-                WarrantySEARCH.setText(value);
-                filterResultsButton.doClick();
-
-            } else if (field.equals("comments")) {
-                commentsSEARCH.setText(value);
-                filterResultsButton.doClick();
+            } else if (content.equals("data_return")) {
+                shouldClick = true;
 
             } else {
-                System.out.println("Unknown field: " + field);
+                System.out.println("Unknown or unsupported action: " + content);
             }
+        }
 
-        } else if (content.equals("settings")) {
-            settingsButton.doClick();
-        } else if (content.equals("reauthenticate")) {
-            reauthenticateButton.doClick();
-        } else if (content.equals("data_return")) {
+        if (shouldClick) {
+            System.out.println("Executing filter...");
             filterResultsButton.doClick();
-        } else {
-            System.out.println("Unknown command: " + content);
         }
     }
-}
 
 
 
@@ -629,6 +750,113 @@ public void handleActions(String input) {
 
         worker.execute();
     }
+
+    private void DisplayFilteredAssets(DefaultTableModel model, String user, String pass,String url,String unit) {
+        model.setRowCount(0); // Clear existing table data
+
+
+        StringBuilder query = new StringBuilder(url);
+
+        LinkedList<String> conditions = new LinkedList<>();
+
+        if(unit!="All Units")
+        {
+            conditions.add("asset_tagSTARTSWITH" + unit);
+        }
+
+        query.append(String.join("^", conditions));
+        String finalQuery = query.toString(); // Final query for use inside the worker
+        System.out.println(finalQuery);
+        // SwingWorker to handle background loading
+        SwingWorker<Void, Integer> worker = new SwingWorker<>()
+        {
+            @Override
+            protected Void doInBackground() throws Exception
+            {
+                publish(5); // Start progress
+
+                HttpURLConnection conn = (HttpURLConnection) new URL(finalQuery).openConnection();
+                conn.setRequestMethod("GET");
+
+                String basicAuth = Base64.getEncoder().encodeToString((user + ":" + pass).getBytes());
+                conn.setRequestProperty("Authorization", "Basic " + basicAuth);
+                conn.setRequestProperty("Accept", "application/xml");
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 200) {
+                    publish(25); // After successful connection
+
+                    InputStream input = conn.getInputStream();
+
+                    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                    Document doc = dBuilder.parse(input);
+                    doc.getDocumentElement().normalize();
+
+                    NodeList resultNodes = doc.getElementsByTagName("result");
+                    int total = resultNodes.getLength();
+
+                    for (int i = 0; i < total; i++)
+                    {
+                        Node resultNode = resultNodes.item(i);
+                        if (resultNode.getNodeType() == Node.ELEMENT_NODE)
+                        {
+                            Element el = (Element) resultNode;
+
+                            String ServiceTag = getTagValue("serial_number", el);
+                            String assetTag = getTagValue("asset_tag", el);
+                            String Comments = getTagValue("comments", el);
+                            String Warranty = getTagValue("warranty_expiration", el);
+                            String Vendor = getNestedTagValue("vendor", "display_value", el);
+                            String Model = getNestedTagValue("model", "display_value", el);
+                            String Department = getNestedTagValue("department", "display_value", el);
+                            String ItemType = getNestedTagValue("model_category", "display_value", el);
+                            String Owner = getNestedTagValue("assigned_to", "display_value", el);
+
+                            final Object[] row = new Object[]{assetTag, ServiceTag, Comments, Vendor, Model, Department, ItemType, Warranty, Owner};
+
+                            SwingUtilities.invokeLater(() -> model.addRow(row));
+                        }
+
+
+                        int progress = 15 + (int)(((double)i / total) * 90);
+                        publish(progress);
+                    }
+                    publish(0);
+                }
+
+                else {
+                    System.out.println(responseCode);
+                    JOptionPane.showMessageDialog(frame, "HTTP Error " + responseCode + ": " + conn.getResponseMessage());
+                }
+
+
+
+                return null;
+            }
+
+            @Override
+            protected void process(List<Integer> chunks) {
+                int latestProgress = chunks.get(chunks.size() - 1);
+                progressBar.setValue(latestProgress);
+            }
+
+            @Override
+            protected void done() {
+                progressBar.setValue(100);
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ignored) {}
+                    SwingUtilities.invokeLater(() -> progressBar.setValue(0));
+                }).start();
+
+            }
+        };
+
+        worker.execute();
+    }
+
 
 
 
