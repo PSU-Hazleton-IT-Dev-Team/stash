@@ -336,6 +336,8 @@ public class maingui extends gui {
         });
 
 
+
+
         runAsReportButton.addActionListener(e -> {
             // clear table once
             DefaultTableModel model = (DefaultTableModel)entryTable.getModel();
