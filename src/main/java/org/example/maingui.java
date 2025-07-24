@@ -339,63 +339,194 @@ public class maingui extends gui {
 
             }
         });
-    } // end of maingui
+        alreadyExpiredButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                StringBuilder query = new StringBuilder();
+                // Add existing filters
+                addAllValueFilters(query);
 
+                // Add warranty expiration filter
+                query.append("^javascript:gs.dateDiff(gs.nowDateTime(),warranty_expiration)<0");
+
+                // Build complete URL
+                String finalQuery = query.toString();
+                if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
+
+                try {
+                    finalQuery = URLEncoder.encode(finalQuery, StandardCharsets.UTF_8.toString());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+                String baseURL=getBaseURL(database);
+
+                String runner = baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
+                        + "&sysparm_limit=100"
+                        + "&sysparm_query=" + finalQuery;
+                query.append("javascript:gs.dateDiff(gs.nowDateTime(),warranty_expiration)<0");
+                WarrantyFeildADV.setText("Already Expired");
+
+                // Make API call with the query
+
+                DisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, runner,unit);
+            }
+        });
+
+        thisYearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                StringBuilder query = new StringBuilder();
+                // Add existing filters
+                addAllValueFilters(query);
+
+                // Add warranty expiration filter
+                query.append("^javascript:gs.dateDiff(gs.nowDateTime(),warranty_expiration)<0");
+
+                // Build complete URL
+                String finalQuery = query.toString();
+                if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
+
+                try {
+                    finalQuery = URLEncoder.encode(finalQuery, StandardCharsets.UTF_8.toString());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+                String baseURL=getBaseURL(database);
+
+                String runner = baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
+                        + "&sysparm_limit=100"
+                        + "&sysparm_query=" + finalQuery;
+                query.append("javascript:gs.datePart(Warranty_Expiration,'yyyy')==gs.datePart(gs.nowDateTime(),'yyyy')");
+                WarrantyFeildADV.setText("Expires This Year");
+
+                // Make API call with the query
+                DisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, runner,unit);
+            }
+        });
+
+        nextYearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                StringBuilder query = new StringBuilder();
+                // Add existing filters
+                addAllValueFilters(query);
+
+                // Add warranty expiration filter
+                query.append("^javascript:gs.dateDiff(gs.nowDateTime(),warranty_expiration)<0");
+
+                // Build complete URL
+                String finalQuery = query.toString();
+                if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
+
+                try {
+                    finalQuery = URLEncoder.encode(finalQuery, StandardCharsets.UTF_8.toString());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+                String baseURL;
+
+                if (database.equals("Production")) {
+                    baseURL = "https://pennstate.service-now.com";
+                } else if (database.equals("Development")) {
+                    baseURL = "https://psudev.service-now.com";
+                } else if (database.equals("Accept")) {
+                    baseURL = "https://psuaccept.service-now.com";
+                } else {
+                    baseURL = "https://pennstate.service-now.com";
+                }
+
+                String runner = baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
+                        + "&sysparm_limit=100"
+                        + "&sysparm_query=" + finalQuery;
+                query.append("javascript:gs.datePart(warranty_expiration,'yyyy')==(gs.datePart(gs.nowDateTime(),'yyyy')+1)");
+                WarrantyFeildADV.setText("Expires Next Year");
+
+                // Make API call with the query
+                DisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, runner,unit);
+            }
+        });
+
+        emptyCommentButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                StringBuilder query = new StringBuilder();
+                query.append("javascript:comments==null || comments==''");
+
+                // Make API call with the query
+                String runner = buildServiceNowQueryURL(false, database);
+                DisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, runner,unit);
+            }
+        });
+
+    } // end of maingui
+    public StringBuilder addAllValueFilters(StringBuilder query)
+    {
+        addMultiValueFilter(query, "serial_number", ServiceTagFeildADV.getText(), includeC.isSelected(), excludeC.isSelected());
+        addMultiValueFilter(query, "vendor.name", VendorFieldADV.getText(), includeV.isSelected(), excludeV.isSelected());
+        addMultiValueFilter(query, "model.name", ModelFeildADV.getText(), includeM.isSelected(), excludeM.isSelected());
+        addMultiValueFilter(query, "model_category.name", ItemTypeFeildADV.getText(), includeIT.isSelected(), excludeIT.isSelected());
+        addMultiValueFilter(query, "department.name", DepartmentFeildADV.getText(), includeD.isSelected(), excludeD.isSelected());
+        addMultiValueFilter(query, "assigned_to.name", OwnerFeildADV.getText(), includeO.isSelected(), excludeO.isSelected());
+        addMultiValueFilter(query, "comments", CommentsFeildADV.getText(), includeC.isSelected(), excludeC.isSelected());
+        return query;
+    }
+
+    public String getBaseURL(String database)
+    {
+        String baseURL;
+        if (database.equals("Production"))
+        {
+            baseURL = "https://pennstate.service-now.com";
+        } else if (database.equals("Development"))
+        {
+            baseURL = "https://psudev.service-now.com";
+        } else if (database.equals("Accept"))
+        {
+            baseURL = "https://psuaccept.service-now.com";
+        } else
+        {
+            baseURL = "https://pennstate.service-now.com";
+        }
+        return baseURL;
+    }
 
     public String buildServiceNowQueryURL(boolean runAsReport,String database) {
+
         StringBuilder query = new StringBuilder();
-        boolean ignoreWarrantyField = false;
-
-        addMultiValueFilter(query, "Asset_Tag", ServiceTagFeildADV.getText(), includeC.isSelected(), excludeC.isSelected());
-        addMultiValueFilter(query, "vendor", VendorFieldADV.getText(), includeV.isSelected(), excludeV.isSelected());
-        addMultiValueFilter(query, "Model", ModelFeildADV.getText(), includeM.isSelected(), excludeM.isSelected());
-        addMultiValueFilter(query, "Item_Type", ItemTypeFeildADV.getText(), includeIT.isSelected(), excludeIT.isSelected());
-        addMultiValueFilter(query, "Department", DepartmentFeildADV.getText(), includeD.isSelected(), excludeD.isSelected());
-        addMultiValueFilter(query, "Owner", OwnerFeildADV.getText(), includeO.isSelected(), excludeO.isSelected());
-        addMultiValueFilter(query, "comments", CommentsFeildADV.getText(), includeC.isSelected(), excludeC.isSelected());
-
-        if (emptyCommentButton.isSelected()) {
-            query.append("^javascript:comments==null || comments==''");
-        }
-
-        if (alreadyExpiredButton.getModel().isArmed()) {
-            query.append("^javascript:gs.dateDiff(gs.nowDateTime(),Warranty_Expiration)<0");
-            WarrantyFeildADV.setText("Already Expired");
-            ignoreWarrantyField = true;
-        } else if (thisYearButton.getModel().isArmed()) {
-            query.append("^javascript:gs.datePart(Warranty_Expiration,'yyyy')==gs.datePart(gs.nowDateTime(),'yyyy')");
-            WarrantyFeildADV.setText("Expires This Year");
-            ignoreWarrantyField = true;
-        } else if (nextYearButton.getModel().isArmed()) {
-            query.append("^javascript:gs.datePart(Warranty_Expiration,'yyyy')==(gs.datePart(gs.nowDateTime(),'yyyy')+1)");
-            WarrantyFeildADV.setText("Expires Next Year");
-            ignoreWarrantyField = true;
-        }
+      addAllValueFilters(query);
 
         String warrantyDate = WarrantyFeildADV.getText().trim();
-        if (!warrantyDate.isEmpty() && !ignoreWarrantyField) {
-            if (beforeW.isSelected()) {
-                query.append("^Warranty_Expiration%3C").append(warrantyDate);
-            } else if (afterW.isSelected()) {
-                query.append("^Warranty_Expiration%3E").append(warrantyDate);
+        if (!warrantyDate.isEmpty())
+        {
+            if (beforeW.isSelected())
+            {
+                query.append("^warranty_expiration%3C").append(warrantyDate);
+            }
+            else if (afterW.isSelected())
+            {
+                query.append("^warranty_expiration%3E").append(warrantyDate);
             }
         }
 
         String finalQuery = query.toString();
         if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
 
-        int limit = runAsReport ? 100000 : 100;
-        String baseURL;
-
-        if (database.equals("Production")) {
-            baseURL = "https://pennstate.service-now.com";
-        } else if (database.equals("Development")) {
-            baseURL = "https://psudev.service-now.com";
-        } else if (database.equals("Accept")) {
-            baseURL = "https://psuaccept.service-now.com";
-        } else {
-            baseURL = "https://pennstate.service-now.com";
+// Minimal encoding: encode only spaces and quotes
+        try
+        {
+            finalQuery = URLEncoder.encode(finalQuery, StandardCharsets.UTF_8.toString());
         }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
+
+        int limit = runAsReport ? 100000 : 100;
+        String baseURL=getBaseURL(database);
 
         return baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
                 + "&sysparm_limit=" + limit
@@ -409,26 +540,38 @@ public class maingui extends gui {
         String[] values = input.trim().split("\\s+");
         if (values.length == 0) return;
 
-        if (include) {
-            // Single value
-            if (values.length == 1) {
-                query.append("^").append(field).append("LIKE").append(values[0]);
+        if (include)
+        {
+            if (values.length == 1)
+            {
+                query.append("^").append(field).append("CONTAINS").append(values[0]);
             }
-            // Multiple values with OR logic
-            else {
-                query.append("^("); // start group
-                for (int i = 0; i < values.length; i++) {
-                    query.append(field).append("LIKE").append(values[i]);
-                    if (i < values.length - 1) {
-                        query.append("^OR");
-                    }
+            else
+            {
+                query.append("^(");
+                for (int i = 0; i < values.length; i++)
+                {
+                    query.append(field).append("CONTAINS").append(values[i]);
+                    if (i < values.length - 1) query.append("^OR");
                 }
-                query.append(")"); // end group
+                query.append(")");
             }
-        } else if (exclude) {
-            // Exact exclusion for each value using !=
-            for (String val : values) {
-                query.append("^").append(field).append("!=").append(val);
+        }
+        else if (exclude)
+        {
+            if (values.length == 1)
+            {
+                query.append("^").append(field).append("DOES NOT CONTAIN").append(values[0]);
+            } else
+            {
+                // For exclusions, we want records that don't contain ANY of these values
+                query.append("^(");
+                for (int i = 0; i < values.length; i++)
+                {
+                    query.append(field).append("DOES NOT CONTAIN").append(values[i]);
+                    if (i < values.length - 1) query.append("^");
+                }
+                query.append(")");
             }
         }
     }
@@ -451,9 +594,6 @@ public class maingui extends gui {
 
         userPromptArea.setText("");
     }
-
-
-
 
     private static final OpenAIClient client = OpenAIOkHttpClient.builder()
             .apiKey(dotenv.get("AIAPI_KEY"))
