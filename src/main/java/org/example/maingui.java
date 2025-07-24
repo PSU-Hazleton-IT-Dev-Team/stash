@@ -333,13 +333,19 @@ public class maingui extends gui {
         });
 
 
-        runAsReportButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String runner=buildServiceNowQueryURL(true,database);
-                DisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, runner,unit);
+        runAsReportButton.addActionListener(e -> {
+            // clear table once
+            DefaultTableModel model = (DefaultTableModel)entryTable.getModel();
+            model.setRowCount(0);
 
-            }
+            // do in background thread to avoid UI freeze
+            new Thread(() -> {
+                for (int offset = 0; offset < 100000; offset += 100) {
+                    String pageUrl = buildServiceNowQueryURL(database, offset);
+                    // this appends rows—use your existing DisplayFilteredAssets
+                    DisplayFilteredAssets(model, username, password, pageUrl, unit);
+                }
+            }).start();
         });
         alreadyExpiredButton.addActionListener(new ActionListener() {
             @Override
@@ -598,6 +604,38 @@ public class maingui extends gui {
 
         query.append(filters);
         return query.toString();
+    }
+
+    public String buildServiceNowQueryURL(String database, int offset) {
+        // base + display + fixed limit of 100
+        String base = getBaseURL(database);
+        StringBuilder url = new StringBuilder(base)
+                .append("/api/now/table/alm_asset")
+                .append("?sysparm_display_value=true")
+                .append("&sysparm_limit=100")
+                .append("&sysparm_offset=").append(offset)
+                .append("&sysparm_query=");
+
+        // re‑use your filter‐builder
+        StringBuilder f = new StringBuilder();
+        addAllValueFilters(f);
+        if (emptyCommentButton.isSelected()) {
+            f.append("^commentsISEMPTY");
+        }
+        // (no preset buttons here – they already wrote into fields)
+        // manual warranty before/after and other filters live in addAllValueFilters + fields
+
+        String filters = f.toString();
+        if (filters.startsWith("^")) filters = filters.substring(1);
+
+        try {
+            filters = URLEncoder.encode(filters, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        url.append(filters);
+        return url.toString();
     }
 
 
