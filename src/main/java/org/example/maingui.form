@@ -378,6 +378,7 @@
                 </constraints>
                 <properties>
                   <text value="Filter"/>
+                  <toolTipText value="Returns first 100 items"/>
                 </properties>
               </component>
               <vspacer id="81d62">
@@ -569,6 +570,7 @@
                 </constraints>
                 <properties>
                   <text value="Run As Report"/>
+                  <toolTipText value="Returns the first 50k Items This will take longer to run"/>
                 </properties>
               </component>
               <component id="f451b" class="javax.swing.JButton" binding="cButton" default-binding="true">
@@ -577,6 +579,7 @@
                 </constraints>
                 <properties>
                   <text value="c"/>
+                  <toolTipText value="Clear"/>
                 </properties>
               </component>
               <component id="da746" class="javax.swing.JTextField" binding="OwnerFeildADV">

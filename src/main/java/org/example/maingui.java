@@ -340,7 +340,7 @@ public class maingui extends gui {
 
             // do in background thread to avoid UI freeze
             new Thread(() -> {
-                for (int offset = 0; offset < 100000; offset += 100) {
+                for (int offset = 0; offset < 50000; offset += 100) {
                     String pageUrl = buildServiceNowQueryURL(database, offset);
                     // this appends rows—use your existing DisplayFilteredAssets
                     DisplayFilteredAssets(model, username, password, pageUrl, unit);
@@ -373,7 +373,6 @@ public class maingui extends gui {
                 String runner = baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
                         + "&sysparm_limit=100"
                         + "&sysparm_query=" + finalQuery;
-                query.append("javascript:gs.dateDiff(gs.nowDateTime(),warranty_expiration)<0");
                 WarrantyFeildADV.setText("Already Expired");
 
                 // Make API call with the query
@@ -411,7 +410,6 @@ public class maingui extends gui {
                 String runner = baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
                         + "&sysparm_limit=100"
                         + "&sysparm_query=" + finalQuery;
-                query.append("javascript:gs.datePart(Warranty_Expiration,'yyyy')==gs.datePart(gs.nowDateTime(),'yyyy')");
                 WarrantyFeildADV.setText("Expires This Year");
 
                 // Make API call with the query
@@ -448,7 +446,6 @@ public class maingui extends gui {
                 String runner = baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
                         + "&sysparm_limit=100"
                         + "&sysparm_query=" + finalQuery;
-                query.append("javascript:gs.datePart(warranty_expiration,'yyyy')==(gs.datePart(gs.nowDateTime(),'yyyy')+1)");
                 WarrantyFeildADV.setText("Expires Next Year");
 
                 // Make API call with the query
@@ -562,10 +559,6 @@ public class maingui extends gui {
         StringBuilder f = new StringBuilder();
         addAllValueFilters(f);
 
-        if (emptyCommentButton.isSelected()) {
-            f.append("^commentsISEMPTY");
-        }
-
         // 3. Preset warranty filters → REST‑safe ranges
         LocalDate today = LocalDate.now();
         DateTimeFormatter iso = DateTimeFormatter.ISO_LOCAL_DATE;
@@ -607,7 +600,7 @@ public class maingui extends gui {
     }
 
     public String buildServiceNowQueryURL(String database, int offset) {
-        // base + display + fixed limit of 100
+        // 1) Base URL + paging
         String base = getBaseURL(database);
         StringBuilder url = new StringBuilder(base)
                 .append("/api/now/table/alm_asset")
@@ -616,18 +609,50 @@ public class maingui extends gui {
                 .append("&sysparm_offset=").append(offset)
                 .append("&sysparm_query=");
 
-        // re‑use your filter‐builder
+        // 2) Core filters (all your other fields)
         StringBuilder f = new StringBuilder();
         addAllValueFilters(f);
-        if (emptyCommentButton.isSelected()) {
+        if (CommentsFeildADV.getText()=="No Comments") {
             f.append("^commentsISEMPTY");
         }
-        // (no preset buttons here – they already wrote into fields)
-        // manual warranty before/after and other filters live in addAllValueFilters + fields
 
+        // 3) Warranty logic based on the literal text in WarrantyFeildADV
+        String wtxt = WarrantyFeildADV.getText().trim();
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter iso = DateTimeFormatter.ISO_LOCAL_DATE;
+
+        switch (wtxt) {
+            case "Already Expired":
+                // anything before today
+                f.append("^warranty_expiration<").append(today.format(iso));
+                break;
+            case "Expires This Year":
+                int y = today.getYear();
+                f.append("^warranty_expiration>=").append(y).append("-01-01")
+                        .append("^warranty_expiration<").append(y + 1).append("-01-01");
+                break;
+            case "Expires Next Year":
+                int ny = today.getYear() + 1;
+                f.append("^warranty_expiration>=").append(ny).append("-01-01")
+                        .append("^warranty_expiration<").append(ny + 1).append("-01-01");
+                break;
+            default:
+                // not one of the presets, maybe a manual date filter?
+                String[] p = wtxt.split("/");
+                if (p.length == 3) {
+                    String norm = p[2] + "-" + p[0] + "-" + p[1];
+                    if (beforeW.isSelected()) {
+                        f.append("^warranty_expiration<").append(norm);
+                    } else if (afterW.isSelected()) {
+                        f.append("^warranty_expiration>").append(norm);
+                    }
+                }
+                break;
+        }
+
+        // 4) Finalize & encode
         String filters = f.toString();
         if (filters.startsWith("^")) filters = filters.substring(1);
-
         try {
             filters = URLEncoder.encode(filters, StandardCharsets.UTF_8.toString());
         } catch (Exception e) {
@@ -637,7 +662,6 @@ public class maingui extends gui {
         url.append(filters);
         return url.toString();
     }
-
 
     private void addMultiValueFilter(StringBuilder query, String field, String input, boolean include, boolean exclude) {
         if (input == null || input.trim().isEmpty()) return;
