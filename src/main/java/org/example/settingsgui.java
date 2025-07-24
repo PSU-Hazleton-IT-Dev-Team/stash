@@ -27,8 +27,11 @@ public class settingsgui extends gui {
             System.out.println("Theme ID: " + theme.getName());
             ThemeBox.addItem(theme.getName());
 
-
-                // Specify the file path
+            //Setting Up agents Box
+            agentSelection.addItem("Chat GPT 4.1 nano");
+            agentSelection.addItem("Chat GPT 4.1 mini");
+            agentSelection.addItem("Gemma 3 27B");
+            agentSelection.addItem("llama 4 Scout");
 
 
 
