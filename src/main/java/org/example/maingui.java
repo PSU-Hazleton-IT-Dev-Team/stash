@@ -330,7 +330,7 @@ public class maingui extends gui {
         filterButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String runner=buildServiceNowQueryURL(false,database);
+                String runner=buildServiceNowQueryURL(database);
                 DisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, runner,unit);
             }
         });
@@ -356,6 +356,12 @@ public class maingui extends gui {
                 StringBuilder query = new StringBuilder();
                 // Add existing filters
                 addAllValueFilters(query);
+
+
+                if(unit!="All Units")
+                {
+                    query.append("asset_tagSTARTSWITH" + unit);
+                }
 
                 // Add warranty expiration filter
                 LocalDate today = LocalDate.now();
@@ -390,6 +396,12 @@ public class maingui extends gui {
                 StringBuilder query = new StringBuilder();
                 // Add existing filters
                 addAllValueFilters(query);
+
+
+                if(unit!="All Units")
+                {
+                    query.append("asset_tagSTARTSWITH" + unit);
+                }
 
                 // Add warranty expiration filter
                 LocalDate today = LocalDate.now();
@@ -427,6 +439,12 @@ public class maingui extends gui {
                 // Add existing filters
                 addAllValueFilters(query);
 
+
+                if(unit!="All Units")
+                {
+                    query.append("asset_tagSTARTSWITH" + unit);
+                }
+
                 // Add warranty expiration filter
                 LocalDate today = LocalDate.now();
                 int nextYear = today.getYear() + 1;
@@ -462,8 +480,15 @@ public class maingui extends gui {
                 // 1) Build your filter string
                 StringBuilder query = new StringBuilder();
                 addAllValueFilters(query);
+
+
+                if(unit!="All Units")
+                {
+                    query.append("asset_tagSTARTSWITH" + unit);
+                }
                 // filter for empty or null comments:
                 query.append("^commentsISEMPTY");
+
 
                 // 2) Trim leading caret
                 String finalQuery = query.toString();
@@ -599,9 +624,9 @@ public class maingui extends gui {
         return baseURL;
     }
 
-    public String buildServiceNowQueryURL(boolean runAsReport, String database) {
+    public String buildServiceNowQueryURL(String database) {
         // 1. Base URL + limit
-        int limit = runAsReport ? 9999 : 100;
+        int limit = 100;
         String base;
         if (database.equals("Production"))      base = "https://pennstate.service-now.com";
         else if (database.equals("Development")) base = "https://psudev.service-now.com";
@@ -670,6 +695,8 @@ public class maingui extends gui {
 
         // 2) Core filters (all your other fields)
         StringBuilder f = new StringBuilder();
+
+
         addAllValueFilters(f);
         if (CommentsFeildADV.getText()=="No Comments") {
             f.append("^commentsISEMPTY");
