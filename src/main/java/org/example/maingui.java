@@ -15,6 +15,8 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -347,7 +349,8 @@ public class maingui extends gui {
                 addAllValueFilters(query);
 
                 // Add warranty expiration filter
-                query.append("^javascript:gs.dateDiff(gs.nowDateTime(),warranty_expiration)<0");
+                LocalDate today = LocalDate.now();
+                query.append("^warranty_expiration<").append(today.format(DateTimeFormatter.ISO_LOCAL_DATE));
 
                 // Build complete URL
                 String finalQuery = query.toString();
@@ -381,8 +384,12 @@ public class maingui extends gui {
                 addAllValueFilters(query);
 
                 // Add warranty expiration filter
-                query.append("^javascript:gs.dateDiff(gs.nowDateTime(),warranty_expiration)<0");
-
+                LocalDate today = LocalDate.now();
+                int year = today.getYear();
+                String startOfThisYear = year + "-01-01";
+                String startOfNextYear = (year + 1) + "-01-01";
+                query.append("^warranty_expiration>=").append(startOfThisYear)
+                        .append("^warranty_expiration<").append(startOfNextYear);
                 // Build complete URL
                 String finalQuery = query.toString();
                 if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
@@ -414,8 +421,12 @@ public class maingui extends gui {
                 addAllValueFilters(query);
 
                 // Add warranty expiration filter
-                query.append("^javascript:gs.dateDiff(gs.nowDateTime(),warranty_expiration)<0");
-
+                LocalDate today = LocalDate.now();
+                int nextYear = today.getYear() + 1;
+                String startOfNextYear = nextYear + "-01-01";
+                String startOfYearAfter  = (nextYear + 1) + "-01-01";
+                query.append("^warranty_expiration>=").append(startOfNextYear)
+                        .append("^warranty_expiration<").append(startOfYearAfter);
                 // Build complete URL
                 String finalQuery = query.toString();
                 if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
@@ -493,44 +504,67 @@ public class maingui extends gui {
         return baseURL;
     }
 
-    public String buildServiceNowQueryURL(boolean runAsReport,String database) {
+    public String buildServiceNowQueryURL(boolean runAsReport, String database) {
+        // 1. Base URL + limit
+        int limit = runAsReport ? 9999 : 100;
+        String base;
+        if (database.equals("Production"))      base = "https://pennstate.service-now.com";
+        else if (database.equals("Development")) base = "https://psudev.service-now.com";
+        else if (database.equals("Accept"))      base = "https://psuaccept.service-now.com";
+        else                                     base = "https://pennstate.service-now.com";
 
-        StringBuilder query = new StringBuilder();
-      addAllValueFilters(query);
+        StringBuilder query = new StringBuilder(base)
+                .append("/api/now/table/alm_asset")
+                .append("?sysparm_display_value=true")
+                .append("&sysparm_limit=").append(limit)
+                .append("&sysparm_query=");
 
-        String warrantyDate = WarrantyFeildADV.getText().trim();
-        if (!warrantyDate.isEmpty())
-        {
-            if (beforeW.isSelected())
-            {
-                query.append("^warranty_expiration%3C").append(warrantyDate);
-            }
-            else if (afterW.isSelected())
-            {
-                query.append("^warranty_expiration%3E").append(warrantyDate);
+        // 2. Build filters
+        StringBuilder f = new StringBuilder();
+        addAllValueFilters(f);
+
+        if (emptyCommentButton.isSelected()) {
+            f.append("^commentsISEMPTY");
+        }
+
+        // 3. Preset warranty filters → REST‑safe ranges
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter iso = DateTimeFormatter.ISO_LOCAL_DATE;
+
+        if (alreadyExpiredButton.isSelected()) {
+            f.append("^warranty_expiration<").append(today.format(iso));
+        } else if (thisYearButton.isSelected()) {
+            int y = today.getYear();
+            f.append("^warranty_expiration>=").append(y).append("-01-01")
+                    .append("^warranty_expiration<").append(y + 1).append("-01-01");
+        } else if (nextYearButton.isSelected()) {
+            int y = today.getYear() + 1;
+            f.append("^warranty_expiration>=").append(y).append("-01-01")
+                    .append("^warranty_expiration<").append(y + 1).append("-01-01");
+        }
+
+        // 4. Manual before/after (MM/DD/YYYY → YYYY-MM-DD)
+        String wd = WarrantyFeildADV.getText().trim();
+        if (!wd.isEmpty()) {
+            String[] p = wd.split("/");
+            if (p.length == 3) {
+                String norm = p[2] + "-" + p[0] + "-" + p[1];
+                if (beforeW.isSelected())    f.append("^warranty_expiration<").append(norm);
+                else if (afterW.isSelected()) f.append("^warranty_expiration>").append(norm);
             }
         }
 
-        String finalQuery = query.toString();
-        if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
-
-// Minimal encoding: encode only spaces and quotes
-        try
-        {
-            finalQuery = URLEncoder.encode(finalQuery, StandardCharsets.UTF_8.toString());
-        }
-        catch (Exception e)
-        {
+        // 5. Finalize and encode
+        String filters = f.toString();
+        if (filters.startsWith("^")) filters = filters.substring(1);
+        try {
+            filters = URLEncoder.encode(filters, StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        if (finalQuery.startsWith("^")) finalQuery = finalQuery.substring(1);
 
-        int limit = runAsReport ? 100000 : 100;
-        String baseURL=getBaseURL(database);
-
-        return baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
-                + "&sysparm_limit=" + limit
-                + "&sysparm_query=" + finalQuery;
+        query.append(filters);
+        return query.toString();
     }
 
 
@@ -540,41 +574,26 @@ public class maingui extends gui {
         String[] values = input.trim().split("\\s+");
         if (values.length == 0) return;
 
-        if (include)
-        {
-            if (values.length == 1)
-            {
-                query.append("^").append(field).append("CONTAINS").append(values[0]);
-            }
-            else
-            {
+        if (include) {
+            if (values.length == 1) {
+                query.append("^").append(field).append("LIKE").append(values[0]);
+            } else {
                 query.append("^(");
-                for (int i = 0; i < values.length; i++)
-                {
-                    query.append(field).append("CONTAINS").append(values[i]);
+                for (int i = 0; i < values.length; i++) {
+                    query.append(field).append("LIKE").append(values[i]);
                     if (i < values.length - 1) query.append("^OR");
                 }
                 query.append(")");
             }
-        }
-        else if (exclude)
-        {
-            if (values.length == 1)
-            {
-                query.append("^").append(field).append("DOES NOT CONTAIN").append(values[0]);
-            } else
-            {
-                // For exclusions, we want records that don't contain ANY of these values
-                query.append("^(");
-                for (int i = 0; i < values.length; i++)
-                {
-                    query.append(field).append("DOES NOT CONTAIN").append(values[i]);
-                    if (i < values.length - 1) query.append("^");
-                }
-                query.append(")");
+        } else if (exclude) {
+            for (String val : values) {
+                query.append("^").append(field).append("!=").append(val);
             }
+
         }
     }
+
+
 
     private void sendMessage() {
         String userText = userPromptArea.getText().trim();
