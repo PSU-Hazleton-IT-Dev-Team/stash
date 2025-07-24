@@ -1,6 +1,9 @@
 package org.example;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -506,6 +509,62 @@ public class maingui extends gui {
                 WarrantyFeildADV.setText("");
                 CommentsFeildADV.setText("");
                 fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, database,unit,limit);
+            }
+        });
+        exportCurrentTableAsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 1) Let the user pick a file
+                JFileChooser chooser = new JFileChooser();
+                chooser.setDialogTitle("Save as Excel");
+                chooser.setSelectedFile(new File("export.xlsx"));
+                int choice = chooser.showSaveDialog(frame);
+                if (choice != JFileChooser.APPROVE_OPTION) return;
+                File outFile = chooser.getSelectedFile();
+
+                // 2) Grab the table model
+                DefaultTableModel model = (DefaultTableModel) entryTable.getModel();
+                int rowCount = model.getRowCount();
+                int colCount = model.getColumnCount();
+
+                // 3) Build the workbook & sheet
+                try (XSSFWorkbook wb = new XSSFWorkbook()) {
+                    XSSFSheet sheet = wb.createSheet("Export");
+
+                    // 3a) Header row
+                    XSSFRow header = sheet.createRow(0);
+                    for (int c = 0; c < colCount; c++) {
+                        header.createCell(c).setCellValue(model.getColumnName(c));
+                    }
+
+                    // 3b) Data rows
+                    for (int r = 0; r < rowCount; r++) {
+                        XSSFRow row = sheet.createRow(r + 1);
+                        for (int c = 0; c < colCount; c++) {
+                            Object val = model.getValueAt(r, c);
+                            row.createCell(c).setCellValue(val == null ? "" : val.toString());
+                        }
+                    }
+
+                    // 4) Autosize columns
+                    for (int c = 0; c < colCount; c++) {
+                        sheet.autoSizeColumn(c);
+                    }
+
+                    // 5) Write file
+                    try (FileOutputStream out = new FileOutputStream(outFile)) {
+                        wb.write(out);
+                    }
+
+                    JOptionPane.showMessageDialog(frame,
+                            "Exported " + rowCount + " rows to:\n" + outFile.getAbsolutePath(),
+                            "Export Successful", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(frame,
+                            "Failed to export:\n" + ex.getMessage(),
+                            "Export Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
     } // end of maingui
