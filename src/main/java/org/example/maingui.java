@@ -437,17 +437,7 @@ public class maingui extends gui {
                     ex.printStackTrace();
                 }
 
-                String baseURL;
-
-                if (database.equals("Production")) {
-                    baseURL = "https://pennstate.service-now.com";
-                } else if (database.equals("Development")) {
-                    baseURL = "https://psudev.service-now.com";
-                } else if (database.equals("Accept")) {
-                    baseURL = "https://psuaccept.service-now.com";
-                } else {
-                    baseURL = "https://pennstate.service-now.com";
-                }
+                String baseURL=getBaseURL(database);
 
                 String runner = baseURL + "/api/now/table/alm_asset?sysparm_display_value=true"
                         + "&sysparm_limit=100"
@@ -463,15 +453,58 @@ public class maingui extends gui {
         emptyCommentButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // 1) Build your filter string
                 StringBuilder query = new StringBuilder();
-                query.append("javascript:comments==null || comments==''");
+                addAllValueFilters(query);
+                // filter for empty or null comments:
+                query.append("^commentsISEMPTY");
 
-                // Make API call with the query
-                String runner = buildServiceNowQueryURL(false, database);
-                DisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, runner,unit);
+                // 2) Trim leading caret
+                String finalQuery = query.toString();
+                if (finalQuery.startsWith("^")) {
+                    finalQuery = finalQuery.substring(1);
+                }
+
+                // 3) Minimal URL‐encode
+                try {
+                    finalQuery = URLEncoder.encode(finalQuery, StandardCharsets.UTF_8.toString());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
+                // 4) Build the full URL
+                String baseURL = getBaseURL(database);
+                String runner = baseURL
+                        + "/api/now/table/alm_asset?sysparm_display_value=true"
+                        + "&sysparm_limit=100"
+                        + "&sysparm_query=" + finalQuery;
+
+                // 5) (Optional) show state in UI
+                CommentsFeildADV.setText("No Comments");
+
+                // 6) Fire the request
+                DisplayFilteredAssets(
+                        (DefaultTableModel) entryTable.getModel(),
+                        username, password,
+                        runner, unit
+                );
             }
         });
 
+        cButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ServiceTagFeildADV.setText("");
+                VendorFieldADV.setText("");
+                ModelFeildADV.setText("");
+                ItemTypeFeildADV.setText("");
+                DepartmentFeildADV.setText("");
+                OwnerFeildADV.setText("");
+                WarrantyFeildADV.setText("");
+                CommentsFeildADV.setText("");
+                fetchAndDisplayFilteredAssets((DefaultTableModel) entryTable.getModel(), username, password, database,unit,limit);
+            }
+        });
     } // end of maingui
     public StringBuilder addAllValueFilters(StringBuilder query)
     {
