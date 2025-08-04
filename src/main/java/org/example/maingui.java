@@ -1,6 +1,5 @@
 package org.example;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -22,18 +21,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-
-import com.openai.client.OpenAIClient;
-import com.openai.client.okhttp.OpenAIOkHttpClient;
-
-import com.openai.models.chat.completions.ChatCompletion;
-import com.openai.models.chat.completions.ChatCompletionCreateParams;
-
 
 
 public class maingui extends gui {
@@ -121,6 +111,10 @@ public class maingui extends gui {
     private JButton cButton;
     private JButton exportCurrentTableAsButton;
     private JButton runAsReportButton;
+    private JCheckBox includeRetiredItemsCheckBox;
+    private JCheckBox includeRetiredItemsCheckBox1;
+    private JCheckBox showOnlyRetiredItemsCheckBox;
+    private JCheckBox showOnlyRetiredItemsCheckBox1;
     private JTextArea sqlInjection;
     private JPanel FilterPannel;
     private JButton injectSQLButton;
@@ -128,7 +122,7 @@ public class maingui extends gui {
     private JButton printToSQLOUTTxtButton;
     private JButton checkoutModeButton;
 
-    static final Dotenv dotenv =Dotenv.load();
+    //static final Dotenv dotenv =Dotenv.load();
 
 
     /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -224,10 +218,6 @@ public class maingui extends gui {
         }
 
 
-
-
-
-
     //Clear filter listener
         clearFilters.addActionListener(new ActionListener() {
             @Override
@@ -254,10 +244,6 @@ public class maingui extends gui {
             }
 
         });
-
-
-
-
 
 
         //Brings up Settings menu
@@ -318,14 +304,14 @@ public class maingui extends gui {
 
 
         //AI Integration
-
+/*
         goButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 sendMessage();
             }
         });
-
+*/
 
         filterButton.addActionListener(new ActionListener() {
             @Override
@@ -594,6 +580,47 @@ public class maingui extends gui {
                 }
             }
         });
+
+
+
+        includeRetiredItemsCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (includeRetiredItemsCheckBox.isSelected()) {
+                    showOnlyRetiredItemsCheckBox.setSelected(false);
+                }
+            }
+        });
+
+        showOnlyRetiredItemsCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (showOnlyRetiredItemsCheckBox.isSelected()) {
+                    includeRetiredItemsCheckBox.setSelected(false);
+                }
+            }
+        });
+
+
+
+        includeRetiredItemsCheckBox1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (includeRetiredItemsCheckBox1.isSelected()) {
+                    showOnlyRetiredItemsCheckBox1.setSelected(false);
+                }
+            }
+        });
+
+        showOnlyRetiredItemsCheckBox1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (showOnlyRetiredItemsCheckBox1.isSelected()) {
+                    includeRetiredItemsCheckBox1.setSelected(false);
+                }
+            }
+        });
+
     } // end of maingui
     public StringBuilder addAllValueFilters(StringBuilder query)
     {
@@ -777,7 +804,7 @@ public class maingui extends gui {
     }
 
 
-
+/*
     private void sendMessage() {
         String userText = userPromptArea.getText().trim();
         if (userText.isEmpty()) return;
@@ -921,7 +948,7 @@ public class maingui extends gui {
         }
     }
 
-
+*/
 
     private static String getTagValue(String tag, Element element) {
         NodeList nodeList = element.getElementsByTagName(tag);
@@ -998,6 +1025,14 @@ public class maingui extends gui {
         if(unit!="All Units")
         {
             conditions.add("asset_tagSTARTSWITH" + unit);
+        }
+
+        if (!includeRetiredItemsCheckBox.isSelected() && !showOnlyRetiredItemsCheckBox.isSelected()) {
+            // Default behavior: show only "In Use"
+            conditions.add("install_status=1");
+        } else if (showOnlyRetiredItemsCheckBox.isSelected()) {
+            // Show only "Retired"
+            conditions.add("install_status=7");
         }
 
         query.append(String.join("^", conditions));
@@ -1104,6 +1139,19 @@ public class maingui extends gui {
         if(unit!="All Units")
         {
             conditions.add("asset_tagSTARTSWITH" + unit);
+        }
+
+        if (!includeRetiredItemsCheckBox1.isSelected() && !showOnlyRetiredItemsCheckBox1.isSelected()) {
+            // Default behavior: show only "In Use"
+            conditions.add("install_status=1");
+
+        } else if (showOnlyRetiredItemsCheckBox1.isSelected()) {
+            // Show only "Retired"
+            conditions.add("install_status=7");
+        }
+
+        if (!url.endsWith("sysparm_query=")) {
+            query.append("^");
         }
 
         query.append(String.join("^", conditions));
