@@ -30,6 +30,12 @@
         </dependency>
         <!-- Maven for flat laf themes -->
 
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.3</version>
+        </dependency>
+
         <!-- Maven for apache poi for Excel import -->
         <dependency>
             <groupId>org.apache.poi</groupId>

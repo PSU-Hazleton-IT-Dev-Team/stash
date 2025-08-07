@@ -143,6 +143,8 @@ public class maingui extends gui {
         chatArea.setEditable(false);
         entryTable.setModel(tableModel);
         entryTable.setAutoCreateRowSorter(true);
+        org.example.StatsPanel statsPanel = new org.example.StatsPanel(entryTable);
+        RightTabs.addTab("Stats", statsPanel);
 
 
         try {
@@ -1248,8 +1250,9 @@ public class maingui extends gui {
     }
 
 
-
-
+    private void createUIComponents() {
+        // TODO: place custom component creation code here
+    }
 }// end of class maingui.java
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
